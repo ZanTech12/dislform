@@ -17,6 +17,13 @@ function RegisterStudent() {
 
     const [form, setForm] = useState(initialForm);
     const [passport, setPassport] = useState(null);
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -47,24 +54,11 @@ function RegisterStudent() {
         </div>
     );
 
-    useEffect(() => {
-        const styleSheet = document.styleSheets[0];
-        const keyframes = `
-          @keyframes moveLeftRight {
-            0% { transform: translateX(0); }
-            50% { transform: translateX(20px); }
-            100% { transform: translateX(0); }
-          }
-        `;
-        styleSheet.insertRule(keyframes, styleSheet.cssRules.length);
-    }, []);
-
     return (
         <>
             <div style={background}>
                 <div style={outerContainer}>
                     <div style={container}>
-                        {/* --- Animated Banner --- */}
                         <div style={marqueeContainer}>
                             <img src={studentImg} alt="Student" style={marqueeImage} />
                             <p style={marqueeText}>
@@ -76,12 +70,12 @@ function RegisterStudent() {
 
                         <form onSubmit={handleSubmit} style={formStyle}>
                             {/* --- Input Rows --- */}
-                            <div style={row}>
+                            <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
                                 {inputField(<FaUser />, <input type="text" name="firstName" placeholder="First Name" value={form.firstName} onChange={handleChange} required style={input} />)}
                                 {inputField(<FaUser />, <input type="text" name="middleName" placeholder="Middle Name" value={form.middleName} onChange={handleChange} style={input} />)}
                             </div>
 
-                            <div style={row}>
+                            <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
                                 {inputField(<FaUser />, <input type="text" name="lastName" placeholder="Last Name" value={form.lastName} onChange={handleChange} required style={input} />)}
                                 {inputField(<FaUser />, (
                                     <select name="gender" value={form.gender} onChange={handleChange} required style={input}>
@@ -92,19 +86,19 @@ function RegisterStudent() {
                                 ))}
                             </div>
 
-                            <div style={row}>
+                            <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
                                 {inputField(<FaCalendarAlt />, <input type="date" name="dateOfBirth" value={form.dateOfBirth} onChange={handleChange} style={input} />)}
                                 {inputField(<FaFlag />, <input type="text" name="nationality" placeholder="Nationality" value={form.nationality} onChange={handleChange} style={input} />)}
                             </div>
 
-                            <div style={row}>
+                            <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
                                 {inputField(<FaFlag />, <input type="text" name="stateOfOrigin" placeholder="State of Origin" value={form.stateOfOrigin} onChange={handleChange} style={input} />)}
                                 {inputField(<FaFlag />, <input type="text" name="lga" placeholder="Local Government Area" value={form.lga} onChange={handleChange} style={input} />)}
                             </div>
 
                             {inputField(<FaEnvelope />, <input type="text" name="homeAddress" placeholder="Home Address" value={form.homeAddress} onChange={handleChange} style={input} />)}
 
-                            <div style={row}>
+                            <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
                                 {inputField(<FaSchool />, (
                                     <select name="religion" value={form.religion} onChange={handleChange} style={input}>
                                         <option value="">Select Religion</option>
@@ -135,7 +129,7 @@ function RegisterStudent() {
                                 ))}
                             </div>
 
-                            <div style={row}>
+                            <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
                                 {inputField(<FaSchool />, <input type="text" name="section" placeholder="Section" value={form.section} onChange={handleChange} style={input} />)}
                                 {inputField(<FaSchool />, (
                                     <select name="session" value={form.session} onChange={handleChange} style={input}>
@@ -146,7 +140,7 @@ function RegisterStudent() {
                                 ))}
                             </div>
 
-                            <div style={row}>
+                            <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
                                 {inputField(<FaSchool />, (
                                     <select name="term" value={form.term} onChange={handleChange} style={input}>
                                         <option value="">Select Term</option>
@@ -158,7 +152,7 @@ function RegisterStudent() {
                                 {inputField(<FaSchool />, <input type="text" name="previousSchool" placeholder="Previous School" value={form.previousSchool} onChange={handleChange} style={input} />)}
                             </div>
 
-                            <div style={row}>
+                            <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
                                 {inputField(<FaCalendarAlt />, <input type="date" name="dateOfAdmission" value={form.dateOfAdmission} onChange={handleChange} style={input} />)}
                                 {inputField(<FaUser />, <input type="file" onChange={(e) => setPassport(e.target.files[0])} style={input} />)}
                             </div>
@@ -244,13 +238,13 @@ const inputWrapper = { position: "relative", flex: "1" };
 const iconStyle = { position: "absolute", top: "50%", left: "10px", transform: "translateY(-50%)", color: "#800000" };
 const input = {
     width: "100%",
-    minHeight: "45px",      // ✅ uniform height
+    minHeight: "45px",
     padding: "10px 10px 10px 35px",
     borderRadius: "5px",
     border: "1px solid #ccc",
     outline: "none",
     fontSize: "15px",
-    boxSizing: "border-box", // ensures padding doesn't break layout
+    boxSizing: "border-box",
 };
 const btn = { background: "#800000", color: "white", padding: "12px", border: "none", borderRadius: "6px", marginTop: "10px", cursor: "pointer", width: "100%", fontWeight: "bold", fontSize: "16px" };
 
