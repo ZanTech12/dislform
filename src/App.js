@@ -1,24 +1,34 @@
-import logo from './logo.svg';
-import './App.css';
+// src/App.js
+import React from "react";
+import { Routes, Route } from "react-router-dom";
+import RegisterStudent from "./pages/RegisterStudent";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminClasses from "./pages/AdminClasses";
+import AdminRecycleBin from "./pages/AdminRecycleBin";
+import ClassStudents from "./pages/ClassStudents";
+import AdminLayout from "./components/AdminLayout";
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Routes>
+      {/* Public registration page */}
+      <Route path="/" element={<RegisterStudent />} />
+
+      {/* All admin routes under /admin with shared layout */}
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="classes" element={<AdminClasses />} />
+        <Route path="class/:classLevel" element={<ClassStudents />} />
+        <Route path="recycle-bin" element={<AdminRecycleBin />} />
+        <Route path="register-student" element={<RegisterStudent />} />
+      </Route>
+
+      {/* 404 fallback */}
+      <Route
+        path="*"
+        element={<h2 style={{ padding: 20 }}>404 - Page Not Found</h2>}
+      />
+    </Routes>
   );
 }
 

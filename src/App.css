@@ -1,38 +1,181 @@
-.App {
-  text-align: center;
+/* --- Global Reset and Base Styles --- */
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: "Poppins", Arial, sans-serif;
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+/* --- Responsive Page Background --- */
+body {
+  background-color: #f7f7f7;
+  background-image: url("https://images.unsplash.com/photo-1581090700227-72b3a6a742f0?auto=format&fit=crop&w=1470&q=80");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+/* --- Ensure All Containers Fit Screens --- */
+* {
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+/* --- Headings --- */
+h1,
+h2,
+h3,
+h4 {
+  margin: 10px 0;
+  color: #333;
+}
+
+/* --- Form and Input Styles --- */
+form {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+input,
+select,
+textarea,
+button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  margin-bottom: 15px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #800000;
+  outline: none;
+  box-shadow: 0 0 5px rgba(128, 0, 0, 0.3);
+}
+
+/* --- Button Styling --- */
+button {
+  background-color: #800000;
   color: white;
+  border: none;
+  padding: 12px;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.3s ease;
 }
 
-.App-link {
-  color: #61dafb;
+button:hover {
+  background-color: #a00000;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+/* --- Footer --- */
+footer {
+  text-align: center;
+  padding: 15px 10px;
+  background-color: #800000;
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  box-shadow: 0 -3px 8px rgba(0, 0, 0, 0.2);
+  width: 100%;
+}
+
+/* --- Navbar Responsiveness --- */
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #800000;
+  color: white;
+  flex-wrap: wrap;
+}
+
+.nav-links {
+  display: flex;
+  gap: 20px;
+}
+
+.nav-links a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.nav-links a:hover {
+  color: #ffd700;
+}
+
+/* --- Responsive Layouts --- */
+@media (max-width: 1024px) {
+  form {
+    max-width: 90%;
   }
-  to {
-    transform: rotate(360deg);
+}
+
+@media (max-width: 768px) {
+  nav {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .nav-links {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    background-color: #800000;
+    padding: 10px 0;
+  }
+
+  .nav-links.open {
+    display: flex;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    font-size: 15px;
+    padding: 10px;
+  }
+
+  footer {
+    font-size: 12px;
+    padding: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  form {
+    padding: 15px;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    font-size: 14px;
+    padding: 9px;
+  }
+
+  footer {
+    font-size: 11px;
   }
 }
