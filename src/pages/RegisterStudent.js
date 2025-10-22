@@ -114,8 +114,17 @@ function RegisterStudent() {
                                     </select>
                                 ))}
                                 {inputField(<FaSchool />, (
-                                    <select name="classLevel" value={form.classLevel} onChange={handleChange} style={input}>
+                                    <select name="classLevel" value={form.classLevel} onChange={handleChange} style={input} required>
                                         <option value="">Select Class</option>
+                                        <option value="KG 1">KG 1</option>
+                                        <option value="KG 2">KG 2</option>
+                                        <option value="Nursery 1">Nursery 1</option>
+                                        <option value="Nursery 2">Nursery 2</option>
+                                        <option value="Basic 1">Basic 1</option>
+                                        <option value="Basic 2">Basic 2</option>
+                                        <option value="Basic 3">Basic 3</option>
+                                        <option value="Basic 4">Basic 4</option>
+                                        <option value="Basic 5">Basic 5</option>
                                         <option value="JSS 1">JSS 1</option>
                                         <option value="JSS 2">JSS 2</option>
                                         <option value="JSS 3">JSS 3</option>
