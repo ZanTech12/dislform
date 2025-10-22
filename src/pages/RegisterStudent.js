@@ -19,12 +19,6 @@ function RegisterStudent() {
     const [passport, setPassport] = useState(null);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-    useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth <= 768);
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, []);
-
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
     const handleSubmit = async (e) => {
@@ -48,17 +42,40 @@ function RegisterStudent() {
     };
 
     const inputField = (icon, element) => (
-        <div style={inputWrapper}>
+        <div style={{ ...inputWrapper, flex: isMobile ? "100%" : "1" }}>
             <span style={iconStyle}>{icon}</span>
             {element}
         </div>
     );
 
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener("resize", handleResize);
+
+        const styleSheet = document.styleSheets[0];
+        const keyframes = `
+          @keyframes moveLeftRight {
+            0% { transform: translateX(0); }
+            50% { transform: translateX(20px); }
+            100% { transform: translateX(0); }
+          }
+        `;
+        styleSheet.insertRule(keyframes, styleSheet.cssRules.length);
+
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
     return (
         <>
             <div style={background}>
                 <div style={outerContainer}>
-                    <div style={container}>
+                    <div
+                        style={{
+                            ...container,
+                            maxWidth: isMobile ? "90%" : "750px", // wider on mobile
+                        }}
+                    >
+                        {/* --- Animated Banner --- */}
                         <div style={marqueeContainer}>
                             <img src={studentImg} alt="Student" style={marqueeImage} />
                             <p style={marqueeText}>
@@ -195,7 +212,6 @@ const container = {
     borderRadius: "10px",
     boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
     width: "100%",
-    maxWidth: "750px",
 };
 
 const marqueeContainer = {
@@ -234,18 +250,9 @@ const title = {
 
 const formStyle = { display: "flex", flexDirection: "column", gap: "15px" };
 const row = { display: "flex", gap: "15px", flexWrap: "wrap" };
-const inputWrapper = { position: "relative", flex: "1" };
+const inputWrapper = { position: "relative" };
 const iconStyle = { position: "absolute", top: "50%", left: "10px", transform: "translateY(-50%)", color: "#800000" };
-const input = {
-    width: "100%",
-    minHeight: "45px",
-    padding: "10px 10px 10px 35px",
-    borderRadius: "5px",
-    border: "1px solid #ccc",
-    outline: "none",
-    fontSize: "15px",
-    boxSizing: "border-box",
-};
+const input = { width: "100%", padding: "10px 10px 10px 35px", borderRadius: "5px", border: "1px solid #ccc", outline: "none", fontSize: "15px" };
 const btn = { background: "#800000", color: "white", padding: "12px", border: "none", borderRadius: "6px", marginTop: "10px", cursor: "pointer", width: "100%", fontWeight: "bold", fontSize: "16px" };
 
 export default RegisterStudent;
