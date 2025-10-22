@@ -242,7 +242,16 @@ const formStyle = { display: "flex", flexDirection: "column", gap: "15px" };
 const row = { display: "flex", gap: "15px", flexWrap: "wrap" };
 const inputWrapper = { position: "relative", flex: "1" };
 const iconStyle = { position: "absolute", top: "50%", left: "10px", transform: "translateY(-50%)", color: "#800000" };
-const input = { width: "100%", padding: "10px 10px 10px 35px", borderRadius: "5px", border: "1px solid #ccc", outline: "none", fontSize: "15px" };
+const input = {
+    width: "100%",
+    minHeight: "45px",      // ✅ uniform height
+    padding: "10px 10px 10px 35px",
+    borderRadius: "5px",
+    border: "1px solid #ccc",
+    outline: "none",
+    fontSize: "15px",
+    boxSizing: "border-box", // ensures padding doesn't break layout
+};
 const btn = { background: "#800000", color: "white", padding: "12px", border: "none", borderRadius: "6px", marginTop: "10px", cursor: "pointer", width: "100%", fontWeight: "bold", fontSize: "16px" };
 
 export default RegisterStudent;

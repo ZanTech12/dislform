@@ -3,6 +3,7 @@ import "../App.css";
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import logo from "../logo DAT.png"; // Your school logo
+import bgImage from "../background.jpg"; // ✅ Background image added
 
 function AdminNavbar() {
     const location = useLocation();
@@ -11,7 +12,6 @@ function AdminNavbar() {
 
     const toggleMenu = () => setMenuOpen(!menuOpen);
 
-    // ✅ Detect window resize dynamically
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768);
         window.addEventListener("resize", handleResize);
@@ -84,12 +84,16 @@ const navbar = {
     alignItems: "center",
     justifyContent: "space-between",
     padding: "10px 20px",
-    backgroundColor: "#800000",
+    backgroundImage: `linear-gradient(rgba(128,0,0,0.9), rgba(128,0,0,0.9)), url(${bgImage})`, // ✅ Background applied
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
     color: "white",
     position: "sticky",
     top: 0,
     zIndex: 1000,
     flexWrap: "wrap",
+    boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
 };
 
 const logoContainer = {
@@ -119,7 +123,7 @@ const schoolName = {
 const companyName = {
     fontSize: "12px",
     margin: 0,
-    opacity: 0.8,
+    opacity: 0.85,
 };
 
 const menuIcon = {
@@ -160,7 +164,7 @@ const navLinksMobileOpen = {
     display: "flex",
     flexDirection: "column",
     width: "100%",
-    backgroundColor: "#660000",
+    backgroundColor: "rgba(102,0,0,0.95)",
     padding: "10px 0",
     marginTop: "10px",
 };
