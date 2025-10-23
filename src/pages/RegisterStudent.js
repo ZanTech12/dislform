@@ -186,6 +186,21 @@ function RegisterStudent() {
                                     }
                                 />
                             </div>
+                            {inputField(
+                                <FaUser />,
+                                <select
+                                    name="religion"
+                                    value={form.religion}
+                                    onChange={handleChange}
+                                    required
+                                    style={input}
+                                >
+                                    <option value="">Select Religion</option>
+                                    <option value="Christianity">Christianity</option>
+                                    <option value="Islam">Islam</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            )}
 
                             <div style={{ marginBottom: "15px" }}>
                                 <label htmlFor="nationality" style={{ display: "block", marginBottom: "5px" }}>
