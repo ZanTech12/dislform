@@ -115,7 +115,7 @@ function RegisterStudent() {
                         <p>
                             Students/Teachers/Parents are required to register their wards
                             to the <strong>Student Management System</strong> because
-                            it will serve as their database for academic records.
+                            it will serve as their database for academic record(s).
                         </p>
                         <button style={buttonStyle} onClick={handleClosePopup}>
                             OK, I Understand
