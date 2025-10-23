@@ -72,12 +72,12 @@ function RegisterStudent() {
                     <div
                         style={{
                             ...container,
-                            maxWidth: isMobile ? "90%" : "750px",
+                            maxWidth: isMobile ? "95%" : "750px", // ✅ More width on mobile
                         }}
                     >
                         <div style={marqueeContainer}>
                             <img src={studentImg} alt="Student" style={marqueeImage} />
-                            <p style={marqueeText}>
+                            <p style={{ ...marqueeText, whiteSpace: isMobile ? "normal" : "nowrap" }}>
                                 ⚠️ Please fill the form carefully with your correct information!
                             </p>
                         </div>
@@ -239,8 +239,8 @@ const marqueeImage = {
 const marqueeText = {
     fontWeight: "bold",
     color: "#800000",
-    whiteSpace: "nowrap",
     flexShrink: 0,
+    textAlign: "center",
 };
 
 const title = {
