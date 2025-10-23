@@ -31,6 +31,14 @@ function RegisterStudent() {
         phoneNumber: "",
     };
 
+    // ✅ Always show popup on page load
+    const [showPopup, setShowPopup] = useState(true);
+
+    const handleClosePopup = () => {
+        setShowPopup(false);
+    };
+
+
     const [form, setForm] = useState(initialForm);
     const [passport, setPassport] = useState(null);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -84,7 +92,37 @@ function RegisterStudent() {
     }, []);
 
     return (
-        <>
+        <div>
+            <style>
+                {`
+      @keyframes fadeInOverlay {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      @keyframes fadeInPopup {
+        from { transform: translateY(-20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+      `}
+            </style>
+
+            {/* ✅ Popup always shows on page load */}
+            {showPopup && (
+                <div style={overlayStyle}>
+                    <div style={popupStyle}>
+                        <h2 style={{ color: "#800000" }}>Important Notice</h2>
+                        <p>
+                            Students/Teachers/Parents are required to register their wards
+                            to the <strong>Student Management System</strong> because
+                            it will serve as their database for academic records.
+                        </p>
+                        <button style={buttonStyle} onClick={handleClosePopup}>
+                            OK, I Understand
+                        </button>
+                    </div>
+                </div>
+            )}
             <div style={background}>
                 <div style={outerContainer}>
                     <div style={{ ...container, maxWidth: isMobile ? "95%" : "750px" }}>
@@ -459,7 +497,7 @@ function RegisterStudent() {
             </div >
 
             <AdminFooter />
-        </>
+        </div >
     );
 }
 
@@ -510,6 +548,39 @@ const marqueeImage = {
     height: "45px",
     animation: "moveLeftRight 4s linear infinite alternate",
     marginRight: "10px",
+};
+const overlayStyle = {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+};
+
+const popupStyle = {
+    backgroundColor: "#fff",
+    padding: "25px",
+    borderRadius: "10px",
+    maxWidth: "500px",
+    width: "90%",
+    textAlign: "center",
+    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)",
+};
+
+const buttonStyle = {
+    backgroundColor: "#800000",
+    color: "white",
+    padding: "10px 20px",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    marginTop: "15px",
+    fontWeight: "bold",
 };
 
 const marqueeText = { fontWeight: "bold", color: "#800000", flexShrink: 0, textAlign: "center" };
