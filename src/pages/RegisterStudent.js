@@ -5,14 +5,14 @@ import axios from "axios";
 import bgImage from "../background.jpg";
 import studentImg from "../student.jpg";
 import AdminFooter from "../components/AdminFooter";
-import { FaUser, FaCalendarAlt, FaFlag, FaSchool, FaEnvelope } from "react-icons/fa";
+import { FaUser, FaCalendarAlt, FaFlag, FaSchool, FaEnvelope, FaPhone } from "react-icons/fa";
 
 function RegisterStudent() {
     const initialForm = {
         firstName: "", middleName: "", lastName: "", gender: "", dateOfBirth: "",
         nationality: "", stateOfOrigin: "", lga: "", homeAddress: "", religion: "",
         classLevel: "", section: "", session: "", term: "", previousSchool: "",
-        dateOfAdmission: "",
+        dateOfAdmission: "", phoneNumber: "",
     };
 
     const [form, setForm] = useState(initialForm);
@@ -72,10 +72,9 @@ function RegisterStudent() {
                     <div
                         style={{
                             ...container,
-                            maxWidth: isMobile ? "90%" : "750px", // wider on mobile
+                            maxWidth: isMobile ? "90%" : "750px",
                         }}
                     >
-                        {/* --- Animated Banner --- */}
                         <div style={marqueeContainer}>
                             <img src={studentImg} alt="Student" style={marqueeImage} />
                             <p style={marqueeText}>
@@ -114,6 +113,9 @@ function RegisterStudent() {
                             </div>
 
                             {inputField(<FaEnvelope />, <input type="text" name="homeAddress" placeholder="Home Address" value={form.homeAddress} onChange={handleChange} style={input} />)}
+
+                            {/* --- Phone Number --- */}
+                            {inputField(<FaPhone />, <input type="tel" name="phoneNumber" placeholder="Phone Number" value={form.phoneNumber} onChange={handleChange} style={input} />)}
 
                             <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
                                 {inputField(<FaSchool />, (
