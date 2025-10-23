@@ -54,18 +54,36 @@ function RegisterStudent() {
             Object.keys(form).forEach((key) => fd.append(key, form[key]));
             if (passport) fd.append("passport", passport);
 
-            await axios.post("https://datregdatabase-1.onrender.com/api/students/register", fd, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
+            const response = await axios.post(
+                "https://datregdatabase-1.onrender.com/api/students/register",
+                fd,
+                {
+                    headers: { "Content-Type": "multipart/form-data" },
+                }
+            );
 
             alert("✅ Registration successful!");
             setForm(initialForm);
             setPassport(null);
         } catch (err) {
-            alert("❌ Error registering student");
+            if (err.response) {
+                // ✅ Handle duplicate student clearly
+                if (err.response.status === 409) {
+                    // Use backend message if exists, otherwise fallback
+                    const message =
+                        err.response.data?.message ||
+                        "⚠️ A student with this information already exists!";
+                    alert(message);
+                } else {
+                    alert(`❌ ${err.response.data?.message || "Error registering student"}`);
+                }
+            } else {
+                alert("❌ Network or server error");
+            }
             console.error(err);
         }
     };
+
 
     const inputField = (icon, element) => (
         <div style={{ ...inputWrapper, flex: isMobile ? "100%" : "1" }}>
