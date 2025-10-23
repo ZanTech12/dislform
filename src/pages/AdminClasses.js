@@ -1,4 +1,3 @@
-// src/pages/AdminClasses.jsx
 import "../App.css";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
@@ -6,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 
 function AdminClasses() {
     const [students, setStudents] = useState([]);
+    const [filteredStudents, setFilteredStudents] = useState([]);
+    const [searchTerm, setSearchTerm] = useState("");
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -17,9 +18,32 @@ function AdminClasses() {
         try {
             const res = await axios.get("https://datregdatabase-1.onrender.com/api/students");
             setStudents(res.data);
+            setFilteredStudents(res.data);
         } catch (err) {
             console.error("❌ Error fetching students:", err);
             alert("Failed to load student list.");
+        }
+    };
+
+    // Filter students by name
+    const handleSearch = () => {
+        if (!searchTerm.trim()) {
+            setFilteredStudents(students);
+            return;
+        }
+        const term = searchTerm.toLowerCase();
+        const filtered = students.filter((st) =>
+            [st.firstName, st.lastName]
+                .filter(Boolean)
+                .some((namePart) => namePart.toLowerCase().includes(term))
+        );
+        setFilteredStudents(filtered);
+    };
+
+    // Optional: run search on Enter key in input
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter") {
+            handleSearch();
         }
     };
 
@@ -31,6 +55,7 @@ function AdminClasses() {
             await axios.put(`https://datregdatabase-1.onrender.com/api/students/recycle/${id}`);
             alert("🗑 Student moved to recycle bin successfully!");
             fetchStudents();
+            setSearchTerm("");
         } catch (err) {
             console.error("❌ Error moving to recycle bin:", err);
             alert("❌ Failed to move student to recycle bin.");
@@ -46,6 +71,21 @@ function AdminClasses() {
         <div style={pageWrapper}>
             <h2 style={title}>📚 Registered Students</h2>
 
+            {/* Search bar */}
+            <div style={searchWrapper}>
+                <input
+                    type="text"
+                    placeholder="Search by first or last name..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    style={searchInput}
+                />
+                <button onClick={handleSearch} style={searchButton}>
+                    🔍 Search
+                </button>
+            </div>
+
             <div style={tableWrapper}>
                 <table style={table}>
                     <thead>
@@ -59,16 +99,17 @@ function AdminClasses() {
                         </tr>
                     </thead>
                     <tbody>
-                        {students.length === 0 ? (
+                        {filteredStudents.length === 0 ? (
                             <tr>
                                 <td colSpan="6" style={noDataText}>
                                     No students found.
                                 </td>
                             </tr>
                         ) : (
-                            students.map((st) => (
+                            filteredStudents.map((st) => (
                                 <tr
                                     key={st._id}
+                                    className="table-row"
                                     style={tableRow}
                                     onClick={() => handleRowClick(st._id)}
                                 >
@@ -128,13 +169,40 @@ const title = {
     fontSize: "22px",
 };
 
+const searchWrapper = {
+    marginBottom: "15px",
+    display: "flex",
+    gap: "10px",
+    width: "100%",
+    maxWidth: "600px",
+};
+
+const searchInput = {
+    flex: 1,
+    padding: "8px 12px",
+    borderRadius: "6px",
+    border: "1px solid #ccc",
+    fontSize: "16px",
+    minWidth: "300px",
+};
+
+const searchButton = {
+    padding: "8px 16px",
+    backgroundColor: "#800000",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontSize: "16px",
+};
+
 const tableWrapper = {
     width: "100%",
     maxWidth: "1000px",
     backgroundColor: "white",
     borderRadius: "10px",
     boxShadow: "0 3px 10px rgba(0,0,0,0.1)",
-    overflowX: "auto", // horizontal scroll for small screens
+    overflowX: "auto",
 };
 
 const table = {
@@ -153,6 +221,7 @@ const theadRow = {
 const tableRow = {
     cursor: "pointer",
     transition: "background 0.2s ease",
+    userSelect: "none",
 };
 
 const noDataText = {
@@ -176,12 +245,5 @@ const deleteBtn = {
 deleteBtn[":hover"] = {
     background: "#b30000",
 };
-
-// --- Responsive tweaks (for smaller devices) ---
-const mediaQuery = window.matchMedia("(max-width: 768px)");
-if (mediaQuery.matches) {
-    table.fontSize = "13px";
-    deleteBtn.padding = "5px 8px";
-}
 
 export default AdminClasses;
