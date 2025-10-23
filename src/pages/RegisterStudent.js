@@ -25,7 +25,7 @@ function RegisterStudent() {
         classLevel: "",
         section: "",
         session: "",
-        term: "",
+        term: "",          // <-- term field added here
         previousSchool: "",
         dateOfAdmission: "",
         phoneNumber: "",
@@ -154,7 +154,7 @@ function RegisterStudent() {
                                 )}
                             </div>
 
-                            {/* ✅ Date of Birth */}
+                            {/* Date of Birth */}
                             <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
                                 {inputField(
                                     <FaCalendarAlt />,
@@ -195,7 +195,7 @@ function RegisterStudent() {
                                 )}
                             </div>
 
-                            {/* ✅ State and LGA */}
+                            {/* State and LGA */}
                             <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
                                 {inputField(
                                     <FaFlag />,
@@ -259,13 +259,19 @@ function RegisterStudent() {
                             <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
                                 {inputField(
                                     <FaSchool />,
-                                    <select name="religion" value={form.religion} onChange={handleChange} style={input}>
+                                    <select
+                                        name="religion"
+                                        value={form.religion}
+                                        onChange={handleChange}
+                                        style={input}
+                                    >
                                         <option value="">Select Religion</option>
                                         <option value="Christianity">Christianity</option>
                                         <option value="Islam">Islam</option>
                                         <option value="Other">Other</option>
                                     </select>
                                 )}
+                                {/* Class, Section, and Term all in same row */}
                                 {inputField(
                                     <FaSchool />,
                                     <select
@@ -305,9 +311,24 @@ function RegisterStudent() {
                                         style={input}
                                     />
                                 )}
+                                {inputField(
+                                    <FaSchool />,
+                                    <select
+                                        name="term"
+                                        value={form.term}
+                                        onChange={handleChange}
+                                        style={input}
+                                        required
+                                    >
+                                        <option value="">Select Term</option>
+                                        <option value="First Term">First Term</option>
+                                        <option value="Second Term">Second Term</option>
+                                        <option value="Third Term">Third Term</option>
+                                    </select>
+                                )}
                             </div>
 
-                            {/* ✅ Date of Admission */}
+                            {/* Date of Admission */}
                             <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
                                 {inputField(
                                     <FaCalendarAlt />,
