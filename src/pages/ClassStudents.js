@@ -278,6 +278,7 @@ function ClassStudents() {
                                     style={input}
                                 >
                                     <option value="">Select Class</option>
+                                    <option value="Reception">Reception</option>
                                     <option value="JSS 1">JSS 1</option>
                                     <option value="JSS 2">JSS 2</option>
                                     <option value="JSS 3">JSS 3</option>

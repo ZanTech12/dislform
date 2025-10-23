@@ -1,152 +1,186 @@
-// src/pages/EditStudentPage.jsx
-import "../App.css";
-import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
-import { FaUser, FaCalendarAlt, FaSchool, FaPhone } from "react-icons/fa";
+// routes/studentRoutes.js
+import express from "express";
+import Student from "../models/Student.js";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
-function EditStudentPage() {
-    const { id } = useParams();
-    const navigate = useNavigate();
-    const [student, setStudent] = useState(null);
-    const [formData, setFormData] = useState({});
-    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+const router = express.Router();
 
-    useEffect(() => {
-        fetchStudent();
-        const handleResize = () => setIsMobile(window.innerWidth <= 768);
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, []);
+// === Multer Setup for Passport Upload ===
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const dir = "uploads";
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname));
+    },
+});
 
-    const fetchStudent = async () => {
-        try {
-            const res = await axios.get(`https://datregdatabase-1.onrender.com/api/students/${id}`);
-            setStudent(res.data);
-            setFormData(res.data);
-        } catch (err) {
-            console.error("❌ Error fetching student:", err);
-            alert("Failed to load student.");
+const upload = multer({ storage });
+
+// === Register New Student ===
+router.post("/register", upload.single("passport"), async (req, res) => {
+    try {
+        const { firstName, lastName, gender, classLevel } = req.body;
+
+        if (!firstName || !lastName || !gender || !classLevel) {
+            return res.status(400).json({ message: "Missing required fields" });
         }
-    };
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
-    };
+        const allowedClasses = [
+            "Reception", "KG 1", "KG 2", "Nursery 1", "Nursery 2",
+            "Basic 1", "Basic 2", "Basic 3", "Basic 4", "Basic 5",
+            "JSS 1", "JSS 2", "JSS 3",
+            "SSS 1", "SSS 2", "SSS 3",
+        ];
 
-    const handleFileChange = (e) => {
-        setFormData({ ...formData, passportFile: e.target.files[0] });
-    };
+        if (!allowedClasses.includes(classLevel))
+            return res.status(400).json({ message: "Invalid class level" });
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const data = new FormData();
-            for (let key in formData) {
-                if (key === "passportFile" && formData[key]) {
-                    data.append("passport", formData[key]);
-                } else if (formData[key] !== undefined) {
-                    data.append(key, formData[key]);
-                }
+        const allowedGenders = ["Male", "Female"];
+        if (!allowedGenders.includes(gender))
+            return res.status(400).json({ message: "Invalid gender" });
+
+        // Generate admission number
+        const year = new Date().getFullYear();
+        const lastStudent = await Student.findOne({
+            admissionNumber: { $regex: `^DIS/${year}/` },
+        }).sort({ admissionNumber: -1 });
+
+        let nextNumber = 1;
+        if (lastStudent && lastStudent.admissionNumber) {
+            const lastNum = parseInt(lastStudent.admissionNumber.split("/")[2], 10);
+            nextNumber = lastNum + 1;
+        }
+
+        if (nextNumber > 999) {
+            return res.status(400).json({ message: "Maximum number of students reached for this year" });
+        }
+
+        const admissionNumber = `DIS/${year}/${String(nextNumber).padStart(3, "0")}`;
+
+        const student = new Student({
+            ...req.body,
+            admissionNumber,
+            passport: req.file ? req.file.filename : null,
+        });
+
+        await student.save();
+        res.status(201).json(student);
+    } catch (error) {
+        console.error("❌ Error registering student:", error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// === Get All Non-deleted Students ===
+router.get("/", async (req, res) => {
+    try {
+        const students = await Student.find({ deleted: false });
+        res.json(students);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// === Get Deleted Students (Recycle Bin) ===
+router.get("/recyclebin", async (req, res) => {
+    try {
+        const deletedStudents = await Student.find({ deleted: true });
+        res.json(deletedStudents);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// === Get Single Student by ID ===
+router.get("/:id", async (req, res) => {
+    try {
+        const student = await Student.findById(req.params.id);
+        if (!student) return res.status(404).json({ message: "Student not found" });
+        res.json(student);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// === Edit / Update Student ===
+router.put("/:id", upload.single("passport"), async (req, res) => {
+    try {
+        const student = await Student.findById(req.params.id);
+        if (!student) return res.status(404).json({ message: "Student not found" });
+
+        // Update all editable fields
+        Object.keys(req.body).forEach((key) => {
+            student[key] = req.body[key];
+        });
+
+        // If a new passport is uploaded, replace the old one
+        if (req.file) {
+            if (student.passport) {
+                const oldPath = path.join("uploads", student.passport);
+                if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
             }
-
-            await axios.put(`https://datregdatabase-1.onrender.com/api/students/${id}`, data, {
-                headers: { "Content-Type": "multipart/form-data" }
-            });
-            alert("✅ Student updated successfully!");
-            navigate("/admin/students");
-        } catch (err) {
-            console.error("❌ Error updating student:", err);
-            alert("Failed to update student.");
+            student.passport = req.file.filename;
         }
-    };
 
-    if (!student) return <p>Loading student...</p>;
+        await student.save();
+        res.json({ message: "✅ Student updated successfully", student });
+    } catch (error) {
+        console.error("❌ Error updating student:", error);
+        res.status(500).json({ message: error.message });
+    }
+});
 
-    const inputField = (icon, element) => (
-        <div style={{ ...inputWrapper, flex: isMobile ? "100%" : "1" }}>
-            <span style={iconStyle}>{icon}</span>
-            {element}
-        </div>
-    );
+// === Soft Delete (Move to Recycle Bin) ===
+router.put("/recycle/:id", async (req, res) => {
+    try {
+        const student = await Student.findByIdAndUpdate(
+            req.params.id,
+            { deleted: true },
+            { new: true }
+        );
+        if (!student) return res.status(404).json({ message: "Student not found" });
+        res.json({ message: "Student moved to recycle bin", student });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
 
-    return (
-        <div style={background}>
-            <div style={outerContainer}>
-                <div style={{ ...container, maxWidth: isMobile ? "90%" : "600px" }}>
-                    <h2 style={title}>✏️ Edit Student: {student.firstName} {student.lastName}</h2>
-                    <form onSubmit={handleSubmit} style={formStyle}>
-                        <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
-                            {inputField(<FaUser />, <input type="text" name="firstName" placeholder="First Name" value={formData.firstName || ""} onChange={handleChange} required style={input} />)}
-                            {inputField(<FaUser />, <input type="text" name="middleName" placeholder="Middle Name" value={formData.middleName || ""} onChange={handleChange} style={input} />)}
-                        </div>
+// === Restore Student ===
+router.put("/restore/:id", async (req, res) => {
+    try {
+        const student = await Student.findByIdAndUpdate(
+            req.params.id,
+            { deleted: false },
+            { new: true }
+        );
+        if (!student) return res.status(404).json({ message: "Student not found" });
+        res.json({ message: "Student restored successfully", student });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
 
-                        <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
-                            {inputField(<FaUser />, <input type="text" name="lastName" placeholder="Last Name" value={formData.lastName || ""} onChange={handleChange} required style={input} />)}
-                            {inputField(<FaUser />, <input type="text" name="admissionNumber" placeholder="Admission Number" value={formData.admissionNumber || ""} onChange={handleChange} required style={input} />)}
-                        </div>
+// === Permanent Delete ===
+router.delete("/permanent/:id", async (req, res) => {
+    try {
+        const student = await Student.findById(req.params.id);
+        if (!student) return res.status(404).json({ message: "Student not found" });
 
-                        <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
-                            {inputField(<FaSchool />, (
-                                <select name="classLevel" value={formData.classLevel || ""} onChange={handleChange} style={input} required>
-                                    <option value="">Select Class</option>
-                                    <option value="KG 1">KG 1</option>
-                                    <option value="KG 2">KG 2</option>
-                                    <option value="Nursery 1">Nursery 1</option>
-                                    <option value="Nursery 2">Nursery 2</option>
-                                    <option value="Basic 1">Basic 1</option>
-                                    <option value="Basic 2">Basic 2</option>
-                                    <option value="Basic 3">Basic 3</option>
-                                    <option value="Basic 4">Basic 4</option>
-                                    <option value="Basic 5">Basic 5</option>
-                                    <option value="JSS 1">JSS 1</option>
-                                    <option value="JSS 2">JSS 2</option>
-                                    <option value="JSS 3">JSS 3</option>
-                                    <option value="SSS 1">SSS 1</option>
-                                    <option value="SSS 2">SSS 2</option>
-                                    <option value="SSS 3">SSS 3</option>
-                                </select>
-                            ))}
-                            {inputField(<FaSchool />, <input type="text" name="section" placeholder="Section" value={formData.section || ""} onChange={handleChange} style={input} />)}
-                        </div>
+        if (student.passport) {
+            const filePath = path.join("uploads", student.passport);
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        }
 
-                        <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
-                            {inputField(<FaSchool />, <input type="text" name="session" placeholder="Session" value={formData.session || ""} onChange={handleChange} style={input} />)}
-                            {inputField(<FaSchool />, <input type="text" name="term" placeholder="Term" value={formData.term || ""} onChange={handleChange} style={input} />)}
-                        </div>
+        await student.deleteOne();
+        res.json({ message: "Student permanently deleted" });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
 
-                        <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
-                            {inputField(<FaCalendarAlt />, <input type="date" name="dateOfAdmission" value={formData.dateOfAdmission?.slice(0, 10) || ""} onChange={handleChange} style={input} />)}
-                            {inputField(<FaPhone />, <input type="tel" name="phoneNumber" placeholder="Phone Number" value={formData.phoneNumber || ""} onChange={handleChange} style={input} />)}
-                        </div>
-
-                        <div>
-                            <label>Passport Image: </label>
-                            <input type="file" accept="image/*" onChange={handleFileChange} />
-                            {student.passport && !formData.passportFile && (
-                                <img src={`https://datregdatabase-1.onrender.com/uploads/${student.passport}`} alt="Passport" width="50" style={{ marginLeft: "10px" }} />
-                            )}
-                        </div>
-
-                        <button type="submit" style={saveBtn}>Save Changes</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// --- Styles ---
-const background = { minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", padding: "20px" };
-const outerContainer = { width: "100%", display: "flex", justifyContent: "center", alignItems: "center" };
-const container = { backgroundColor: "rgba(255,255,255,0.97)", padding: "25px", borderRadius: "10px", boxShadow: "0 4px 10px rgba(0,0,0,0.2)", width: "100%" };
-const title = { textAlign: "center", color: "#800000", marginBottom: "20px", fontSize: "22px" };
-const formStyle = { display: "flex", flexDirection: "column", gap: "15px" };
-const row = { display: "flex", gap: "15px", flexWrap: "wrap" };
-const inputWrapper = { position: "relative" };
-const iconStyle = { position: "absolute", top: "50%", left: "10px", transform: "translateY(-50%)", color: "#800000" };
-const input = { width: "100%", padding: "10px 10px 10px 35px", borderRadius: "5px", border: "1px solid #ccc", outline: "none", fontSize: "15px" };
-const saveBtn = { background: "green", color: "white", padding: "12px", borderRadius: "6px", border: "none", cursor: "pointer", width: "100%", fontWeight: "bold", fontSize: "16px" };
-
-export default EditStudentPage;
+export default router;

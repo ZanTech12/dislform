@@ -1,104 +1,182 @@
-// src/pages/AdminDashboard.jsx
+import "../App.css";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { FaEdit, FaTrash, FaUser, FaEye } from "react-icons/fa";
 
 function AdminDashboard() {
-    const allClasses = [
-        "KG 1", "KG 2",
-        "Nursery 1", "Nursery 2",
-        "Basic 1", "Basic 2", "Basic 3", "Basic 4", "Basic 5",
-        "JSS 1", "JSS 2", "JSS 3",
-        "SSS 1", "SSS 2", "SSS 3"
-    ];
-
-    const [classCounts, setClassCounts] = useState({});
-    const [totalStudents, setTotalStudents] = useState(0);
+    const [students, setStudents] = useState([]);
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
-        fetchClassCounts();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        fetchStudents();
     }, []);
 
-    const fetchClassCounts = async () => {
+    const fetchStudents = async () => {
         try {
             const res = await axios.get("https://datregdatabase-1.onrender.com/api/students");
-            const students = res.data;
-
-            // Count students per class
-            const counts = {};
-            allClasses.forEach((cls) => (counts[cls] = 0));
-            students.forEach((student) => {
-                const cls = student.classLevel;
-                if (cls && counts[cls] !== undefined) counts[cls] += 1;
-            });
-
-            setClassCounts(counts);
-            setTotalStudents(students.length);
+            setStudents(res.data);
         } catch (err) {
             console.error("❌ Error fetching students:", err);
-            alert("Failed to fetch student data.");
+            alert("Failed to fetch students.");
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleCardClick = (cls) => {
-        navigate(`/admin/class/${cls}`);
+    const handleEdit = (id) => {
+        navigate(`/admin/edit-student/${id}`);
     };
 
-    const getCardColor = (cls) => {
-        if (cls.startsWith("KG") || cls.startsWith("Nursery")) return "#28a745";
-        if (cls.startsWith("Basic")) return "#17a2b8";
-        if (cls.startsWith("JSS")) return "#ffc107";
-        if (cls.startsWith("SSS")) return "#dc3545";
-        return "#007bff";
+    const handleDelete = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this student?")) return;
+        try {
+            await axios.put(`https://datregdatabase-1.onrender.com/api/students/recycle/${id}`);
+            alert("🗑️ Student moved to Recycle Bin.");
+            fetchStudents();
+        } catch (err) {
+            console.error("❌ Error deleting student:", err);
+            alert("Failed to delete student.");
+        }
     };
+
+    if (loading) return <p>Loading students...</p>;
 
     return (
-        <div style={{ padding: "20px" }}>
-            <h2 style={{ fontSize: "1.8rem", marginBottom: "10px" }}>📊 Admin Dashboard</h2>
-            <p style={{ fontSize: "1.2rem", fontWeight: "bold", marginBottom: "25px" }}>
-                Total Students Registered: {totalStudents}
-            </p>
+        <div style={pageContainer}>
+            <h2 style={pageTitle}>🎓 All Registered Students</h2>
 
-            {/* Class Cards */}
-            <div style={grid}>
-                {allClasses.map((cls) => (
-                    <div
-                        key={cls}
-                        style={{ ...card, background: getCardColor(cls) }}
-                        onClick={() => handleCardClick(cls)}
-                    >
-                        <h3 style={{ margin: 0 }}>{cls}</h3>
-                        <p style={countStyle}>{classCounts[cls] || 0} Students</p>
-                    </div>
-                ))}
-            </div>
+            {students.length === 0 ? (
+                <p>No students found.</p>
+            ) : (
+                <div style={tableWrapper}>
+                    <table style={table}>
+                        <thead>
+                            <tr style={tableHeader}>
+                                <th>#</th>
+                                <th>Passport</th>
+                                <th>Name</th>
+                                <th>Gender</th>
+                                <th>Class</th>
+                                <th>Admission No</th>
+                                <th>Phone</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {students.map((student, index) => (
+                                <tr key={student._id} style={tableRow}>
+                                    <td>{index + 1}</td>
+                                    <td>
+                                        {student.passport ? (
+                                            <img
+                                                src={`https://datregdatabase-1.onrender.com/uploads/${student.passport}`}
+                                                alt="Passport"
+                                                style={passportImg}
+                                            />
+                                        ) : (
+                                            <FaUser style={{ color: "#800000" }} />
+                                        )}
+                                    </td>
+                                    <td>{`${student.firstName} ${student.middleName || ""} ${student.lastName}`}</td>
+                                    <td>{student.gender}</td>
+                                    <td>{student.classLevel}</td>
+                                    <td>{student.admissionNumber}</td>
+                                    <td>{student.phoneNumber || "N/A"}</td>
+                                    <td>
+                                        <button style={viewBtn} onClick={() => navigate(`/admin/view-student/${student._id}`)}>
+                                            <FaEye />
+                                        </button>
+                                        <button style={editBtn} onClick={() => handleEdit(student._id)}>
+                                            <FaEdit />
+                                        </button>
+                                        <button style={deleteBtn} onClick={() => handleDelete(student._id)}>
+                                            <FaTrash />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 }
 
-const grid = {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-    gap: "20px",
-    marginTop: "20px",
+// --- Styles ---
+const pageContainer = {
+    padding: "30px",
+    backgroundColor: "#f9f9f9",
+    minHeight: "100vh",
 };
 
-const card = {
-    color: "white",
-    padding: "20px",
-    borderRadius: "10px",
-    boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
+const pageTitle = {
     textAlign: "center",
-    cursor: "pointer",
-    transition: "transform 0.2s, box-shadow 0.2s",
+    color: "#800000",
+    marginBottom: "25px",
+    fontSize: "24px",
 };
 
-const countStyle = {
-    fontSize: "1.5rem",
-    fontWeight: "bold",
-    marginTop: "10px",
+const tableWrapper = {
+    overflowX: "auto",
+    backgroundColor: "white",
+    borderRadius: "10px",
+    boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+};
+
+const table = {
+    width: "100%",
+    borderCollapse: "collapse",
+    fontSize: "15px",
+};
+
+const tableHeader = {
+    backgroundColor: "#800000",
+    color: "white",
+};
+
+const tableRow = {
+    borderBottom: "1px solid #ddd",
+    textAlign: "center",
+};
+
+const passportImg = {
+    width: "40px",
+    height: "40px",
+    borderRadius: "50%",
+    objectFit: "cover",
+};
+
+const viewBtn = {
+    background: "#007bff",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    padding: "6px 8px",
+    margin: "0 3px",
+    cursor: "pointer",
+};
+
+const editBtn = {
+    background: "orange",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    padding: "6px 8px",
+    margin: "0 3px",
+    cursor: "pointer",
+};
+
+const deleteBtn = {
+    background: "red",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    padding: "6px 8px",
+    margin: "0 3px",
+    cursor: "pointer",
 };
 
 export default AdminDashboard;
