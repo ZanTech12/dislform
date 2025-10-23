@@ -155,215 +155,284 @@ function RegisterStudent() {
                             </div>
 
                             {/* Date of Birth */}
-                            <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
-                                {inputField(
-                                    <FaCalendarAlt />,
-                                    <DatePicker
-                                        selected={form.dateOfBirth ? new Date(form.dateOfBirth) : null}
-                                        onChange={(date) =>
-                                            setForm({
-                                                ...form,
-                                                dateOfBirth: date ? date.toISOString().split("T")[0] : "",
-                                            })
-                                        }
-                                        dateFormat="yyyy-MM-dd"
-                                        placeholderText="YYYY-MM-DD"
-                                        customInput={
-                                            <input
-                                                type="text"
-                                                name="dateOfBirth"
-                                                placeholder="YYYY-MM-DD"
-                                                value={form.dateOfBirth}
-                                                onChange={(e) =>
-                                                    setForm({ ...form, dateOfBirth: e.target.value })
-                                                }
-                                                style={input}
-                                            />
-                                        }
-                                    />
-                                )}
-                                {inputField(
-                                    <FaFlag />,
-                                    <input
-                                        type="text"
-                                        name="nationality"
-                                        placeholder="Nationality"
-                                        value={form.nationality}
-                                        onChange={handleChange}
-                                        style={input}
-                                    />
-                                )}
+
+                            <div style={{ marginBottom: "15px" }}>
+                                <label htmlFor="dateOfBirth" style={{ display: "block", marginBottom: "5px" }}>
+                                    Date of Birth:
+                                </label>
+                                <DatePicker
+                                    id="dateOfBirth"
+                                    selected={form.dateOfBirth ? new Date(form.dateOfBirth) : null}
+                                    onChange={(date) =>
+                                        setForm({
+                                            ...form,
+                                            dateOfBirth: date ? date.toISOString().split("T")[0] : "",
+                                        })
+                                    }
+                                    dateFormat="yyyy-MM-dd"
+                                    placeholderText="YYYY-MM-DD"
+                                    customInput={
+                                        <input
+                                            type="text"
+                                            name="dateOfBirth"
+                                            placeholder="YYYY-MM-DD"
+                                            value={form.dateOfBirth}
+                                            onChange={(e) =>
+                                                setForm({ ...form, dateOfBirth: e.target.value })
+                                            }
+                                            style={input}
+                                            required
+                                        />
+                                    }
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: "15px" }}>
+                                <label htmlFor="nationality" style={{ display: "block", marginBottom: "5px" }}>
+                                    Nationality:
+                                </label>
+                                <input
+                                    type="text"
+                                    id="nationality"
+                                    name="nationality"
+                                    placeholder="Nationality"
+                                    value={form.nationality}
+                                    onChange={handleChange}
+                                    style={input}
+                                    required
+                                />
                             </div>
 
                             {/* State and LGA */}
-                            <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
-                                {inputField(
-                                    <FaFlag />,
-                                    <select
-                                        name="stateOfOrigin"
-                                        value={form.stateOfOrigin}
-                                        onChange={handleChange}
-                                        style={input}
-                                    >
-                                        <option value="">Select State of Origin</option>
-                                        {Object.keys(nigeriaLgas).map((state) => (
-                                            <option key={state} value={state}>
-                                                {state}
-                                            </option>
-                                        ))}
-                                    </select>
-                                )}
-                                {inputField(
-                                    <FaFlag />,
-                                    <select
-                                        name="lga"
-                                        value={form.lga}
-                                        onChange={handleChange}
-                                        style={input}
-                                        disabled={!form.stateOfOrigin}
-                                    >
-                                        <option value="">Select Local Government Area</option>
-                                        {availableLgas.map((lga) => (
-                                            <option key={lga} value={lga}>
-                                                {lga}
-                                            </option>
-                                        ))}
-                                    </select>
-                                )}
+                            <div style={{ marginBottom: "15px" }}>
+                                <label htmlFor="stateOfOrigin" style={{ display: "block", marginBottom: "5px" }}>
+                                    State of Origin:
+                                </label>
+                                <select
+                                    id="stateOfOrigin"
+                                    name="stateOfOrigin"
+                                    value={form.stateOfOrigin}
+                                    onChange={handleChange}
+                                    style={input}
+                                    required
+                                >
+                                    <option value="">Select State of Origin</option>
+                                    {Object.keys(nigeriaLgas).map((state) => (
+                                        <option key={state} value={state}>
+                                            {state}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
 
-                            {inputField(
-                                <FaEnvelope />,
-                                <input
-                                    type="text"
+                            <div style={{ marginBottom: "15px" }}>
+                                <label htmlFor="lga" style={{ display: "block", marginBottom: "5px" }}>
+                                    Local Government Area:
+                                </label>
+                                <select
+                                    id="lga"
+                                    name="lga"
+                                    value={form.lga}
+                                    onChange={handleChange}
+                                    style={input}
+                                    disabled={!form.stateOfOrigin} // only enabled if state is selected
+                                    required
+                                >
+                                    <option value="">Select Local Government Area</option>
+                                    {availableLgas.map((lga) => (
+                                        <option key={lga} value={lga}>
+                                            {lga}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div style={{ marginBottom: "15px" }}>
+                                <label htmlFor="homeAddress" style={{ display: "block", marginBottom: "5px" }}>
+                                    Home Address:
+                                </label>
+                                <textarea
+                                    id="homeAddress"
                                     name="homeAddress"
-                                    placeholder="Home Address"
                                     value={form.homeAddress}
                                     onChange={handleChange}
-                                    style={input}
+                                    style={{
+                                        ...input,
+                                        height: "80px", // taller for multiline input
+                                        resize: "vertical" // user can resize vertically
+                                    }}
+                                    placeholder="Enter your home address"
+                                    required
                                 />
-                            )}
+                            </div>
 
-                            {inputField(
-                                <FaPhone />,
+
+                            <div style={{ marginBottom: "15px" }}>
+                                <label htmlFor="phone" style={{ display: "block", marginBottom: "5px" }}>
+                                    Phone Number:
+                                </label>
                                 <input
                                     type="tel"
-                                    name="phoneNumber"
-                                    placeholder="Phone Number"
-                                    value={form.phoneNumber}
+                                    id="phone"
+                                    name="phone"
+                                    value={form.phone}
+                                    onChange={(e) => {
+                                        // Remove all non-digit characters
+                                        let cleaned = e.target.value.replace(/\D/g, "");
+
+                                        // Limit to 10 digits
+                                        if (cleaned.length > 10) cleaned = cleaned.slice(0, 10);
+
+                                        // Format as XXX-XXX-XXXX
+                                        let formatted = cleaned;
+                                        if (cleaned.length > 6) {
+                                            formatted = `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+                                        } else if (cleaned.length > 3) {
+                                            formatted = `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
+                                        }
+
+                                        setForm({ ...form, phone: formatted });
+                                    }}
+                                    style={input}
+                                    placeholder="XXX-XXX-XXXX"
+                                    required
+                                />
+                            </div>
+
+
+
+                            <div style={{ marginBottom: "15px" }}>
+                                <label htmlFor="classLevel" style={{ display: "block", marginBottom: "5px" }}>
+                                    Class:
+                                </label>
+                                <select
+                                    id="classLevel"
+                                    name="classLevel"
+                                    value={form.classLevel}
+                                    onChange={handleChange}
+                                    style={input}
+                                    required
+                                >
+                                    <option value="">Select Class</option>
+                                    <option value="Reception">Reception</option>
+                                    <option value="KG1">KG 1</option>
+                                    <option value="KG2">KG 2</option>
+                                    <option value="Nursery 1">Nursery 1</option>
+                                    <option value="Nursery 2">Nursery 2</option>
+                                    <option value="Primary 1">Primary 1</option>
+                                    <option value="Primary 2">Primary 2</option>
+                                    <option value="Primary 3">Primary 3</option>
+                                    <option value="Primary 4">Primary 4</option>
+                                    <option value="Primary 5">Primary 5</option>
+                                    <option value="Primary 6">Primary 6</option>
+                                    <option value="JSS1">JSS 1</option>
+                                    <option value="JSS2">JSS 2</option>
+                                    <option value="JSS3">JSS 3</option>
+                                    <option value="SSS1">SSS 1</option>
+                                    <option value="SSS2">SSS 2</option>
+                                    <option value="SSS3">SSS 3</option>
+                                </select>
+                            </div>
+
+                            <div style={{ marginBottom: "15px" }}>
+                                <label htmlFor="section" style={{ display: "block", marginBottom: "5px" }}>
+                                    Section:
+                                </label>
+                                <select
+                                    id="section"
+                                    name="section"
+                                    value={form.section}
+                                    onChange={handleChange}
+                                    style={input}
+                                    required
+                                >
+                                    <option value="">Select Section</option>
+                                    <option value="A">A</option>
+                                    <option value="B">B</option>
+                                    <option value="C">C</option>
+                                    <option value="D">D</option>
+                                </select>
+                            </div>
+
+                            <div style={{ marginBottom: "15px" }}>
+                                <label htmlFor="term" style={{ display: "block", marginBottom: "5px" }}>
+                                    Term:
+                                </label>
+                                <select
+                                    id="term"
+                                    name="term"
+                                    value={form.term}
+                                    onChange={handleChange}
+                                    style={input}
+                                    required
+                                >
+                                    <option value="">Select Term</option>
+                                    <option value="First Term">First Term</option>
+                                    <option value="Second Term">Second Term</option>
+                                    <option value="Third Term">Third Term</option>
+                                </select>
+                            </div>
+                            <div style={{ marginBottom: "15px" }}>
+                                <label htmlFor="session" style={{ display: "block", marginBottom: "5px" }}>
+                                    Session:
+                                </label>
+                                <select
+                                    id="session"
+                                    name="session"
+                                    value={form.session}
+                                    onChange={handleChange}
+                                    style={input}
+                                    required
+                                >
+                                    <option value="">Select Session</option>
+                                    <option value="2025/2026">2025/2026</option>
+                                    <option value="2026/2027">2026/2027</option>
+                                </select>
+                            </div>
+                            {/* Date of Admission */}
+
+                            <div style={{ marginBottom: "15px" }}>
+                                <label htmlFor="dateOfAdmission" style={{ display: "block", marginBottom: "5px" }}>
+                                    Date of Admission:
+                                </label>
+                                <input
+                                    type="date"
+                                    id="dateOfAdmission"
+                                    name="dateOfAdmission"
+                                    placeholder="YYYY-MM-DD"
+                                    value={form.dateOfAdmission || ""}
+                                    onChange={handleChange}
+                                    style={input}
+                                    required
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: "15px" }}>
+                                <label htmlFor="previousSchool" style={{ display: "block", marginBottom: "5px" }}>
+                                    Previous School:
+                                </label>
+                                <input
+                                    type="text"
+                                    id="previousSchool"
+                                    name="previousSchool"
+                                    placeholder="Enter Name of Former School"
+                                    value={form.previousSchool}
                                     onChange={handleChange}
                                     style={input}
                                 />
-                            )}
-
-                            <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
-                                {inputField(
-                                    <FaSchool />,
-                                    <select
-                                        name="religion"
-                                        value={form.religion}
-                                        onChange={handleChange}
-                                        style={input}
-                                    >
-                                        <option value="">Select Religion</option>
-                                        <option value="Christianity">Christianity</option>
-                                        <option value="Islam">Islam</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                )}
-                                {/* Class, Section, and Term all in same row */}
-                                {inputField(
-                                    <FaSchool />,
-                                    <select
-                                        name="classLevel"
-                                        value={form.classLevel}
-                                        onChange={handleChange}
-                                        style={input}
-                                        required
-                                    >
-                                        <option value="">Select Class</option>
-                                        <option value="Reception">Reception</option>
-                                        <option value="KG 1">KG 1</option>
-                                        <option value="KG 2">KG 2</option>
-                                        <option value="Nursery 1">Nursery 1</option>
-                                        <option value="Nursery 2">Nursery 2</option>
-                                        <option value="Basic 1">Basic 1</option>
-                                        <option value="Basic 2">Basic 2</option>
-                                        <option value="Basic 3">Basic 3</option>
-                                        <option value="Basic 4">Basic 4</option>
-                                        <option value="Basic 5">Basic 5</option>
-                                        <option value="JSS 1">JSS 1</option>
-                                        <option value="JSS 2">JSS 2</option>
-                                        <option value="JSS 3">JSS 3</option>
-                                        <option value="SSS 1">SSS 1</option>
-                                        <option value="SSS 2">SSS 2</option>
-                                        <option value="SSS 3">SSS 3</option>
-                                    </select>
-                                )}
-                                {inputField(
-                                    <FaSchool />,
-                                    <input
-                                        type="text"
-                                        name="section"
-                                        placeholder="Section (e.g. A, B, or Science)"
-                                        value={form.section}
-                                        onChange={handleChange}
-                                        style={input}
-                                    />
-                                )}
-                                {inputField(
-                                    <FaSchool />,
-                                    <select
-                                        name="term"
-                                        value={form.term}
-                                        onChange={handleChange}
-                                        style={input}
-                                        required
-                                    >
-                                        <option value="">Select Term</option>
-                                        <option value="First Term">First Term</option>
-                                        <option value="Second Term">Second Term</option>
-                                        <option value="Third Term">Third Term</option>
-                                    </select>
-                                )}
                             </div>
 
-                            {/* Date of Admission */}
-                            <div style={{ ...row, flexDirection: isMobile ? "column" : "row" }}>
-                                {inputField(
-                                    <FaCalendarAlt />,
-                                    <DatePicker
-                                        selected={form.dateOfAdmission ? new Date(form.dateOfAdmission) : null}
-                                        onChange={(date) =>
-                                            setForm({
-                                                ...form,
-                                                dateOfAdmission: date ? date.toISOString().split("T")[0] : "",
-                                            })
-                                        }
-                                        dateFormat="yyyy-MM-dd"
-                                        placeholderText="YYYY-MM-DD"
-                                        customInput={
-                                            <input
-                                                type="text"
-                                                name="dateOfAdmission"
-                                                placeholder="YYYY-MM-DD"
-                                                value={form.dateOfAdmission}
-                                                onChange={(e) =>
-                                                    setForm({ ...form, dateOfAdmission: e.target.value })
-                                                }
-                                                style={input}
-                                            />
-                                        }
-                                    />
-                                )}
-                                {inputField(
-                                    <FaUser />,
-                                    <input
-                                        type="file"
-                                        onChange={(e) => setPassport(e.target.files[0])}
-                                        style={input}
-                                    />
-                                )}
+                            <div style={{ marginBottom: "15px" }}>
+                                <label htmlFor="passport" style={{ display: "block", marginBottom: "5px" }}>
+                                    Passport:
+                                </label>
+                                <input
+                                    type="file"
+                                    id="passport"
+                                    name="passport"
+                                    onChange={(e) => setPassport(e.target.files[0])}
+                                    style={input}
+                                />
                             </div>
 
                             <button type="submit" style={btn}>
@@ -371,8 +440,8 @@ function RegisterStudent() {
                             </button>
                         </form>
                     </div>
-                </div>
-            </div>
+                </div >
+            </div >
 
             <AdminFooter />
         </>
