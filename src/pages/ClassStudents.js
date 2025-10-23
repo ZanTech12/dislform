@@ -1,4 +1,4 @@
-import "../App.css"
+import "../App.css";
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
@@ -56,7 +56,7 @@ function ClassStudents() {
             middleName: student.middleName || "",
             lastName: student.lastName || "",
             gender: student.gender || "",
-            dateOfBirth: student.dateOfBirth || "",
+            dateOfBirth: student.dateOfBirth?.slice(0, 10) || "",
             nationality: student.nationality || "",
             stateOfOrigin: student.stateOfOrigin || "",
             lga: student.lga || "",
@@ -67,7 +67,7 @@ function ClassStudents() {
             session: student.session || "",
             term: student.term || "",
             previousSchool: student.previousSchool || "",
-            dateOfAdmission: student.dateOfAdmission || "",
+            dateOfAdmission: student.dateOfAdmission?.slice(0, 10) || "",
             admissionNumber: student.admissionNumber || "",
         });
         setPassport(null);
@@ -85,21 +85,30 @@ function ClassStudents() {
             await axios.put(
                 `https://datregdatabase-1.onrender.com/api/students/${editingStudent._id}`,
                 fd,
-                {
-                    headers: { "Content-Type": "multipart/form-data" },
-                }
+                { headers: { "Content-Type": "multipart/form-data" } }
             );
 
             alert("✅ Student updated successfully!");
             setEditingStudent(null);
             fetchStudents();
         } catch (err) {
-            console.error("❌ Error updating student:", err);
+            console.error("❌ Error updating student:", err.response?.data || err.message);
             alert("Failed to update student");
         }
     };
 
     const handleCancel = () => setEditingStudent(null);
+
+    // ✅ enums aligned with the backend model
+    const classLevels = [
+        "KG 1", "KG 2",
+        "Nursery 1", "Nursery 2",
+        "Basic 1", "Basic 2", "Basic 3", "Basic 4", "Basic 5",
+        "JSS 1", "JSS 2", "JSS 3",
+        "SSS 1", "SSS 2", "SSS 3"
+    ];
+
+    const terms = ["First Term", "Second Term", "Third Term"];
 
     return (
         <div style={{ padding: 20 }}>
@@ -148,12 +157,7 @@ function ClassStudents() {
                 <div style={modalOverlay}>
                     <div style={modalContent}>
                         <h3>Edit Student</h3>
-                        <form
-                            onSubmit={handleSubmit}
-                            style={formStyle}
-                            className="responsive-form"
-                        >
-                            {/* Admission Number (read-only) */}
+                        <form onSubmit={handleSubmit} style={formStyle} className="responsive-form">
                             <div>
                                 <label style={label}>Admission Number:</label>
                                 <input
@@ -166,102 +170,35 @@ function ClassStudents() {
                             </div>
 
                             {/* Name Fields */}
-                            <input
-                                type="text"
-                                name="firstName"
-                                placeholder="First Name"
-                                value={form.firstName}
-                                onChange={handleChange}
-                                required
-                                style={input}
-                            />
-                            <input
-                                type="text"
-                                name="middleName"
-                                placeholder="Middle Name"
-                                value={form.middleName}
-                                onChange={handleChange}
-                                style={input}
-                            />
-                            <input
-                                type="text"
-                                name="lastName"
-                                placeholder="Last Name"
-                                value={form.lastName}
-                                onChange={handleChange}
-                                required
-                                style={input}
-                            />
+                            <input type="text" name="firstName" placeholder="First Name" value={form.firstName} onChange={handleChange} required style={input} />
+                            <input type="text" name="middleName" placeholder="Middle Name" value={form.middleName} onChange={handleChange} style={input} />
+                            <input type="text" name="lastName" placeholder="Last Name" value={form.lastName} onChange={handleChange} required style={input} />
 
                             {/* Gender & DOB */}
                             <div>
                                 <label style={label}>Gender:</label>
-                                <select
-                                    name="gender"
-                                    value={form.gender}
-                                    onChange={handleChange}
-                                    required
-                                    style={input}
-                                >
+                                <select name="gender" value={form.gender} onChange={handleChange} required style={input}>
                                     <option value="">Select Gender</option>
                                     <option value="Male">Male</option>
                                     <option value="Female">Female</option>
                                 </select>
                             </div>
+
                             <div>
                                 <label style={label}>Date of Birth:</label>
-                                <input
-                                    type="date"
-                                    name="dateOfBirth"
-                                    value={form.dateOfBirth}
-                                    onChange={handleChange}
-                                    style={input}
-                                />
+                                <input type="date" name="dateOfBirth" value={form.dateOfBirth} onChange={handleChange} style={input} />
                             </div>
 
-                            {/* Nationality, State, LGA, Address */}
-                            <input
-                                type="text"
-                                name="nationality"
-                                placeholder="Nationality"
-                                value={form.nationality}
-                                onChange={handleChange}
-                                style={input}
-                            />
-                            <input
-                                type="text"
-                                name="stateOfOrigin"
-                                placeholder="State of Origin"
-                                value={form.stateOfOrigin}
-                                onChange={handleChange}
-                                style={input}
-                            />
-                            <input
-                                type="text"
-                                name="lga"
-                                placeholder="Local Government Area"
-                                value={form.lga}
-                                onChange={handleChange}
-                                style={input}
-                            />
-                            <input
-                                type="text"
-                                name="homeAddress"
-                                placeholder="Home Address"
-                                value={form.homeAddress}
-                                onChange={handleChange}
-                                style={input}
-                            />
+                            {/* Address Section */}
+                            <input type="text" name="nationality" placeholder="Nationality" value={form.nationality} onChange={handleChange} style={input} />
+                            <input type="text" name="stateOfOrigin" placeholder="State of Origin" value={form.stateOfOrigin} onChange={handleChange} style={input} />
+                            <input type="text" name="lga" placeholder="Local Government Area" value={form.lga} onChange={handleChange} style={input} />
+                            <input type="text" name="homeAddress" placeholder="Home Address" value={form.homeAddress} onChange={handleChange} style={input} />
 
-                            {/* Other Fields */}
+                            {/* Religion */}
                             <div>
                                 <label style={label}>Religion:</label>
-                                <select
-                                    name="religion"
-                                    value={form.religion}
-                                    onChange={handleChange}
-                                    style={input}
-                                >
+                                <select name="religion" value={form.religion} onChange={handleChange} style={input}>
                                     <option value="">Select Religion</option>
                                     <option value="Christianity">Christianity</option>
                                     <option value="Islam">Islam</option>
@@ -269,94 +206,42 @@ function ClassStudents() {
                                 </select>
                             </div>
 
+                            {/* Class & Term */}
                             <div>
                                 <label style={label}>Class Level:</label>
-                                <select
-                                    name="classLevel"
-                                    value={form.classLevel}
-                                    onChange={handleChange}
-                                    style={input}
-                                >
+                                <select name="classLevel" value={form.classLevel} onChange={handleChange} style={input} required>
                                     <option value="">Select Class</option>
-                                    <option value="Reception">Reception</option>
-                                    <option value="JSS 1">JSS 1</option>
-                                    <option value="JSS 2">JSS 2</option>
-                                    <option value="JSS 3">JSS 3</option>
-                                    <option value="SSS 1">SSS 1</option>
-                                    <option value="SSS 2">SSS 2</option>
-                                    <option value="SSS 3">SSS 3</option>
+                                    {classLevels.map((level) => (
+                                        <option key={level} value={level}>{level}</option>
+                                    ))}
                                 </select>
                             </div>
 
-                            {/* Remaining Fields */}
-                            <input
-                                type="text"
-                                name="section"
-                                placeholder="Section (e.g. A, B)"
-                                value={form.section}
-                                onChange={handleChange}
-                                style={input}
-                            />
-                            <input
-                                type="text"
-                                name="session"
-                                placeholder="Session (e.g. 2025/2026)"
-                                value={form.session}
-                                onChange={handleChange}
-                                style={input}
-                            />
-                            <input
-                                type="text"
-                                name="term"
-                                placeholder="Term (e.g. First Term)"
-                                value={form.term}
-                                onChange={handleChange}
-                                style={input}
-                            />
-                            <input
-                                type="text"
-                                name="previousSchool"
-                                placeholder="Previous School"
-                                value={form.previousSchool}
-                                onChange={handleChange}
-                                style={input}
-                            />
-                            <input
-                                type="date"
-                                name="dateOfAdmission"
-                                value={form.dateOfAdmission}
-                                onChange={handleChange}
-                                style={input}
-                            />
+                            <div>
+                                <label style={label}>Term:</label>
+                                <select name="term" value={form.term} onChange={handleChange} style={input}>
+                                    <option value="">Select Term</option>
+                                    {terms.map((term) => (
+                                        <option key={term} value={term}>{term}</option>
+                                    ))}
+                                </select>
+                            </div>
 
+                            <input type="text" name="section" placeholder="Section (e.g. A, B)" value={form.section} onChange={handleChange} style={input} />
+                            <input type="text" name="session" placeholder="Session (e.g. 2025/2026)" value={form.session} onChange={handleChange} style={input} />
+                            <input type="text" name="previousSchool" placeholder="Previous School" value={form.previousSchool} onChange={handleChange} style={input} />
+                            <input type="date" name="dateOfAdmission" value={form.dateOfAdmission} onChange={handleChange} style={input} />
+
+                            {/* Passport Upload */}
                             <div>
                                 <label style={label}>Upload Passport:</label>
-                                <input
-                                    type="file"
-                                    onChange={(e) => setPassport(e.target.files[0])}
-                                    style={input}
-                                />
+                                <input type="file" onChange={(e) => setPassport(e.target.files[0])} style={input} />
                             </div>
 
                             {/* Buttons */}
-                            <div
-                                style={{
-                                    display: "flex",
-                                    gap: "10px",
-                                    flexDirection: "column",
-                                    marginTop: "10px",
-                                }}
-                            >
-                                <button type="submit" style={editButton}>
-                                    Save
-                                </button>
-                                <button
-                                    type="button"
-                                    style={cancelButton}
-                                    onClick={handleCancel}
-                                >
-                                    Cancel
-                                </button>
+                            <div style={{ display: "flex", gap: "10px", flexDirection: "column", marginTop: "10px" }}>
+                                <button type="submit" style={editButton}>Save</button>
+                                <button type="button" style={cancelButton} onClick={handleCancel}>Cancel</button>
                             </div>
                         </form>
                     </div>
@@ -368,64 +253,13 @@ function ClassStudents() {
 
 // --- Styles ---
 const tableWrapper = { overflowX: "auto", width: "100%" };
-const table = {
-    width: "100%",
-    borderCollapse: "collapse",
-    marginTop: "20px",
-    minWidth: "400px",
-};
-const editButton = {
-    padding: "10px",
-    backgroundColor: "#4CAF50",
-    color: "white",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-};
-const cancelButton = {
-    padding: "10px",
-    backgroundColor: "#f44336",
-    color: "white",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-};
-const modalOverlay = {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    width: "100vw",
-    height: "100vh",
-    backgroundColor: "rgba(0,0,0,0.5)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: "10px",
-    zIndex: 1000,
-};
-const modalContent = {
-    backgroundColor: "white",
-    padding: "20px",
-    borderRadius: "8px",
-    width: "100%",
-    maxWidth: "600px",
-    maxHeight: "90vh",
-    overflowY: "auto",
-    boxSizing: "border-box",
-};
-const formStyle = {
-    display: "grid",
-    gridTemplateColumns: "1fr",
-    gap: "10px",
-    width: "100%",
-};
-const input = {
-    padding: "10px",
-    borderRadius: "5px",
-    border: "1px solid #ccc",
-    width: "100%",
-    boxSizing: "border-box",
-};
+const table = { width: "100%", borderCollapse: "collapse", marginTop: "20px", minWidth: "400px" };
+const editButton = { padding: "10px", backgroundColor: "#4CAF50", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" };
+const cancelButton = { padding: "10px", backgroundColor: "#f44336", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" };
+const modalOverlay = { position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", padding: "10px", zIndex: 1000 };
+const modalContent = { backgroundColor: "white", padding: "20px", borderRadius: "8px", width: "100%", maxWidth: "600px", maxHeight: "90vh", overflowY: "auto", boxSizing: "border-box" };
+const formStyle = { display: "grid", gridTemplateColumns: "1fr", gap: "10px", width: "100%" };
+const input = { padding: "10px", borderRadius: "5px", border: "1px solid #ccc", width: "100%", boxSizing: "border-box" };
 const label = { fontWeight: "bold", marginTop: "10px" };
 
 export default ClassStudents;
