@@ -3,7 +3,7 @@ import "../App.css";
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { FaUser, FaCalendarAlt, FaFlag, FaSchool, FaEnvelope, FaPhone } from "react-icons/fa";
+import { FaUser, FaCalendarAlt, FaSchool, FaPhone } from "react-icons/fa";
 
 function EditStudentPage() {
     const { id } = useParams();
@@ -51,7 +51,7 @@ function EditStudentPage() {
                 }
             }
 
-            await axios.put(`https://datregdatabase-1.onrender.com/api/students/edit/${id}`, data, {
+            await axios.put(`https://datregdatabase-1.onrender.com/api/students/${id}`, data, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
             alert("✅ Student updated successfully!");
