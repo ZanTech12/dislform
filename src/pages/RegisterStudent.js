@@ -409,20 +409,15 @@ function RegisterStudent() {
                                 <label htmlFor="section" style={{ display: "block", marginBottom: "5px" }}>
                                     Section:
                                 </label>
-                                <select
+                                <input
+                                    type="text"
                                     id="section"
                                     name="section"
                                     value={form.section}
                                     onChange={handleChange}
+                                    placeholder="Enter Section (e.g., A, B, C, etc.)"
                                     style={input}
-                                    required
-                                >
-                                    <option value="">Select Section</option>
-                                    <option value="A">A</option>
-                                    <option value="B">B</option>
-                                    <option value="C">C</option>
-                                    <option value="D">D</option>
-                                </select>
+                                />
                             </div>
 
                             <div style={{ marginBottom: "15px" }}>
