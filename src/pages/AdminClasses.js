@@ -72,19 +72,54 @@ function AdminClasses() {
             <h2 style={title}>📚 Registered Students</h2>
 
             {/* Search bar */}
-            <div style={searchWrapper}>
+
+            <div
+                style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: "10px",
+                    width: "100%",
+                    maxWidth: "600px",
+                    margin: "0 auto",
+                    padding: "10px",
+                }}
+            >
                 <input
                     type="text"
                     placeholder="Search by first or last name..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    style={searchInput}
+                    style={{
+                        flex: "1",
+                        minWidth: "200px",
+                        width: "100%",
+                        padding: "12px",
+                        borderRadius: "8px",
+                        border: "1px solid #ccc",
+                        fontSize: "16px",
+                        boxSizing: "border-box",
+                    }}
                 />
-                <button onClick={handleSearch} style={searchButton}>
+                <button
+                    onClick={handleSearch}
+                    style={{
+                        padding: "12px 18px",
+                        borderRadius: "8px",
+                        backgroundColor: "#007bff",
+                        color: "white",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "16px",
+                        flexShrink: "0",
+                    }}
+                >
                     🔍 Search
                 </button>
             </div>
+
 
             <div style={tableWrapper}>
                 <table style={table}>
