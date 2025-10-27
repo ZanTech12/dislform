@@ -386,8 +386,8 @@ function RegisterStudent() {
                                 >
                                     <option value="">Select Class</option>
                                     <option value="Reception">Reception</option>
-                                    <option value="KG1">KG 1</option>
-                                    <option value="KG2">KG 2</option>
+                                    <option value="KG 1">KG 1</option>
+                                    <option value="KG 2">KG 2</option>
                                     <option value="Nursery 1">Nursery 1</option>
                                     <option value="Nursery 2">Nursery 2</option>
                                     <option value="Primary 1">Primary 1</option>
@@ -396,12 +396,12 @@ function RegisterStudent() {
                                     <option value="Primary 4">Primary 4</option>
                                     <option value="Primary 5">Primary 5</option>
                                     <option value="Primary 6">Primary 6</option>
-                                    <option value="JSS1">JSS 1</option>
-                                    <option value="JSS2">JSS 2</option>
-                                    <option value="JSS3">JSS 3</option>
-                                    <option value="SSS1">SSS 1</option>
-                                    <option value="SSS2">SSS 2</option>
-                                    <option value="SSS3">SSS 3</option>
+                                    <option value="JSS 1">JSS 1</option>
+                                    <option value="JSS 2">JSS 2</option>
+                                    <option value="JSS 3">JSS 3</option>
+                                    <option value="SSS 1">SSS 1</option>
+                                    <option value="SSS 2">SSS 2</option>
+                                    <option value="SSS 3">SSS 3</option>
                                 </select>
                             </div>
 
