@@ -486,9 +486,15 @@ function RegisterStudent() {
                                 />
                             </div>
 
-                            <button type="submit" style={btn}>
+                            <button
+                                type="submit"
+                                style={btn}
+                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1e7625c9")} // hover color
+                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#800000")} // original color
+                            >
                                 Register
                             </button>
+
                         </form>
                     </div>
                 </div >
