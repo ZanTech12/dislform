@@ -4,7 +4,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 function AdminDashboard() {
-    // ✅ Full backend class list (same as your model)
+    // ✅ Full backend class list
     const allClasses = [
         "Reception",
         "KG 1", "KG 2",
@@ -28,49 +28,56 @@ function AdminDashboard() {
             const res = await axios.get("https://datregdatabase-1.onrender.com/api/students");
             const students = res.data;
 
-            // ✅ Initialize all classes with 0
+            // Initialize all classes with 0
             const counts = {};
-            allClasses.forEach((cls) => (counts[cls] = 0));
+            allClasses.forEach(cls => (counts[cls] = 0));
+            counts["Unknown"] = 0; // For missing classLevel
 
-            // ✅ Count per class
-            students.forEach((student) => {
-                const cls = student.classLevel;
-                if (cls && counts.hasOwnProperty(cls)) {
-                    counts[cls] += 1;
-                }
+            // Robust counting
+            let maleCount = 0;
+            let femaleCount = 0;
+            let unknownGenderCount = 0;
+            let total = 0;
+
+            students.forEach(student => {
+                // ✅ Class count
+                const cls = (student.classLevel || "Unknown").trim();
+                if (counts.hasOwnProperty(cls)) counts[cls] += 1;
+                else counts["Unknown"] += 1;
+
+                // ✅ Gender count
+                const g = (student.gender || "").toString().toLowerCase().trim();
+                if (g === "male" || g === "m") maleCount += 1;
+                else if (g === "female" || g === "f") femaleCount += 1;
+                else unknownGenderCount += 1;
+
+                total += 1;
             });
 
-            // ✅ Calculate total from class counts (for full consistency)
-            const verifiedTotal = Object.values(counts).reduce((sum, val) => sum + val, 0);
-
-            // ✅ Gender stats that match the verified total
-            const maleCount = students.filter((s) => s.gender === "Male").length;
-            const femaleCount = students.filter((s) => s.gender === "Female").length;
-
-            const genderStats = [
+            setClassCounts(counts);
+            setTotalStudents(total);
+            setGenderData([
                 { name: "Male", value: maleCount },
                 { name: "Female", value: femaleCount },
-            ];
-
-            setClassCounts(counts);
-            setTotalStudents(verifiedTotal);
-            setGenderData(genderStats);
+                { name: "Unknown", value: unknownGenderCount }
+            ]);
         } catch (err) {
             console.error("❌ Error fetching students:", err);
             alert("Failed to fetch student data.");
         }
     };
 
-    const handleCardClick = (cls) => {
+    const handleCardClick = cls => {
         navigate(`/admin/class/${cls}`);
     };
 
-    const getCardColor = (cls) => {
+    const getCardColor = cls => {
         if (cls === "Reception") return "#6f42c1"; // Purple
         if (cls.startsWith("KG") || cls.startsWith("Nursery")) return "#28a745"; // Green
         if (cls.startsWith("Primary")) return "#17a2b8"; // Teal
         if (cls.startsWith("JSS")) return "#ffc107"; // Yellow
         if (cls.startsWith("SSS")) return "#dc3545"; // Red
+        if (cls === "Unknown") return "#6c757d"; // Gray for unknown
         return "#007bff"; // Default blue
     };
 
@@ -88,6 +95,11 @@ function AdminDashboard() {
                     👦 Male: {genderData.find(g => g.name === "Male")?.value || 0}
                     &nbsp;&nbsp; | &nbsp;&nbsp;
                     👧 Female: {genderData.find(g => g.name === "Female")?.value || 0}
+                    {genderData.find(g => g.name === "Unknown")?.value > 0 && (
+                        <>
+                            &nbsp;&nbsp; | &nbsp;&nbsp; ❓ Unknown: {genderData.find(g => g.name === "Unknown")?.value}
+                        </>
+                    )}
                     <br />
                     <span style={{ fontSize: "0.9rem", color: "#555" }}>
                         (Total: {totalStudents})
@@ -97,7 +109,7 @@ function AdminDashboard() {
 
             {/* Class Cards */}
             <div style={grid}>
-                {allClasses.map((cls) => (
+                {Object.keys(classCounts).map(cls => (
                     <div
                         key={cls}
                         style={{ ...card, background: getCardColor(cls) }}
