@@ -31,7 +31,6 @@ function AdminDashboard() {
             // Initialize all classes with 0
             const counts = {};
             allClasses.forEach(cls => (counts[cls] = 0));
-            counts["Unknown"] = 0; // For missing classLevel
 
             // Robust counting
             let maleCount = 0;
@@ -40,18 +39,19 @@ function AdminDashboard() {
             let total = 0;
 
             students.forEach(student => {
-                // ✅ Class count
-                const cls = (student.classLevel || "Unknown").trim();
-                if (counts.hasOwnProperty(cls)) counts[cls] += 1;
-                else counts["Unknown"] += 1;
+                const cls = (student.classLevel || "").trim();
 
-                // ✅ Gender count
-                const g = (student.gender || "").toString().toLowerCase().trim();
-                if (g === "male" || g === "m") maleCount += 1;
-                else if (g === "female" || g === "f") femaleCount += 1;
-                else unknownGenderCount += 1;
+                // Only count students in valid classes
+                if (counts.hasOwnProperty(cls)) {
+                    counts[cls] += 1;
+                    total += 1; // Total students in valid classes
 
-                total += 1;
+                    // Only count gender if student is in valid class
+                    const g = (student.gender || "").toString().toLowerCase().trim();
+                    if (g === "male" || g === "m") maleCount += 1;
+                    else if (g === "female" || g === "f") femaleCount += 1;
+                    else unknownGenderCount += 1;
+                }
             });
 
             setClassCounts(counts);
@@ -59,7 +59,7 @@ function AdminDashboard() {
             setGenderData([
                 { name: "Male", value: maleCount },
                 { name: "Female", value: femaleCount },
-                { name: "Unknown", value: unknownGenderCount }
+                ...(unknownGenderCount > 0 ? [{ name: "Unknown", value: unknownGenderCount }] : [])
             ]);
         } catch (err) {
             console.error("❌ Error fetching students:", err);
@@ -77,7 +77,6 @@ function AdminDashboard() {
         if (cls.startsWith("Primary")) return "#17a2b8"; // Teal
         if (cls.startsWith("JSS")) return "#ffc107"; // Yellow
         if (cls.startsWith("SSS")) return "#dc3545"; // Red
-        if (cls === "Unknown") return "#6c757d"; // Gray for unknown
         return "#007bff"; // Default blue
     };
 
