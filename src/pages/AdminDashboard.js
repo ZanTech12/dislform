@@ -4,11 +4,12 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 function AdminDashboard() {
+    // ✅ Full backend class list (same as your model)
     const allClasses = [
-        "Reception", // Added Reception here
+        "Reception",
         "KG 1", "KG 2",
         "Nursery 1", "Nursery 2",
-        "Basic 1", "Basic 2", "Basic 3", "Basic 4", "Basic 5",
+        "Primary 1", "Primary 2", "Primary 3", "Primary 4", "Primary 5", "Primary 6",
         "JSS 1", "JSS 2", "JSS 3",
         "SSS 1", "SSS 2", "SSS 3"
     ];
@@ -27,26 +28,32 @@ function AdminDashboard() {
             const res = await axios.get("https://datregdatabase-1.onrender.com/api/students");
             const students = res.data;
 
-            // Initialize counts
+            // ✅ Initialize all classes with 0
             const counts = {};
             allClasses.forEach((cls) => (counts[cls] = 0));
 
-            // Count students by class
+            // ✅ Count per class
             students.forEach((student) => {
                 const cls = student.classLevel;
-                if (cls && counts[cls] !== undefined) counts[cls] += 1;
+                if (cls && counts.hasOwnProperty(cls)) {
+                    counts[cls] += 1;
+                }
             });
 
-            // Count students by gender
+            // ✅ Calculate total from class counts (for full consistency)
+            const verifiedTotal = Object.values(counts).reduce((sum, val) => sum + val, 0);
+
+            // ✅ Gender stats that match the verified total
             const maleCount = students.filter((s) => s.gender === "Male").length;
             const femaleCount = students.filter((s) => s.gender === "Female").length;
+
             const genderStats = [
                 { name: "Male", value: maleCount },
                 { name: "Female", value: femaleCount },
             ];
 
             setClassCounts(counts);
-            setTotalStudents(students.length);
+            setTotalStudents(verifiedTotal);
             setGenderData(genderStats);
         } catch (err) {
             console.error("❌ Error fetching students:", err);
@@ -59,12 +66,12 @@ function AdminDashboard() {
     };
 
     const getCardColor = (cls) => {
-        if (cls === "Reception") return "#6f42c1"; // Purple for Reception
+        if (cls === "Reception") return "#6f42c1"; // Purple
         if (cls.startsWith("KG") || cls.startsWith("Nursery")) return "#28a745"; // Green
-        if (cls.startsWith("Basic")) return "#17a2b8"; // Teal
+        if (cls.startsWith("Primary")) return "#17a2b8"; // Teal
         if (cls.startsWith("JSS")) return "#ffc107"; // Yellow
         if (cls.startsWith("SSS")) return "#dc3545"; // Red
-        return "#007bff"; // Blue fallback
+        return "#007bff"; // Default blue
     };
 
     return (
@@ -74,15 +81,21 @@ function AdminDashboard() {
                 Total Students Registered: {totalStudents}
             </p>
 
-            {/* Gender Counts Only */}
+            {/* Gender Stats */}
             <div style={chartContainer}>
                 <h3 style={{ marginBottom: "10px" }}>👫 Gender Distribution</h3>
                 <p style={{ textAlign: "center", fontWeight: "600", marginBottom: "0" }}>
-                    👦 Male: {genderData.find(g => g.name === "Male")?.value || 0} &nbsp;&nbsp; | &nbsp;&nbsp; 👧 Female: {genderData.find(g => g.name === "Female")?.value || 0}
+                    👦 Male: {genderData.find(g => g.name === "Male")?.value || 0}
+                    &nbsp;&nbsp; | &nbsp;&nbsp;
+                    👧 Female: {genderData.find(g => g.name === "Female")?.value || 0}
+                    <br />
+                    <span style={{ fontSize: "0.9rem", color: "#555" }}>
+                        (Total: {totalStudents})
+                    </span>
                 </p>
             </div>
 
-            {/* Class Counts */}
+            {/* Class Cards */}
             <div style={grid}>
                 {allClasses.map((cls) => (
                     <div
@@ -99,7 +112,7 @@ function AdminDashboard() {
     );
 }
 
-// Layout styles
+// === Layout Styles ===
 const grid = {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",

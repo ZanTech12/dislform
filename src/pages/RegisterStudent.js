@@ -216,32 +216,17 @@ function RegisterStudent() {
                                 <label htmlFor="dateOfBirth" style={{ display: "block", marginBottom: "5px" }}>
                                     Date of Birth:
                                 </label>
-                                <DatePicker
+                                <input
+                                    type="date"
                                     id="dateOfBirth"
-                                    selected={form.dateOfBirth ? new Date(form.dateOfBirth) : null}
-                                    onChange={(date) =>
-                                        setForm({
-                                            ...form,
-                                            dateOfBirth: date ? date.toISOString().split("T")[0] : "",
-                                        })
-                                    }
-                                    dateFormat="yyyy-MM-dd"
-                                    placeholderText="YYYY-MM-DD"
-                                    customInput={
-                                        <input
-                                            type="text"
-                                            name="dateOfBirth"
-                                            placeholder="YYYY-MM-DD"
-                                            value={form.dateOfBirth}
-                                            onChange={(e) =>
-                                                setForm({ ...form, dateOfBirth: e.target.value })
-                                            }
-                                            style={input}
-                                            required
-                                        />
-                                    }
+                                    name="dateOfBirth"
+                                    value={form.dateOfBirth}
+                                    onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
+                                    style={input}
+                                    required
                                 />
                             </div>
+
                             {inputField(
                                 <FaUser />,
                                 <select
