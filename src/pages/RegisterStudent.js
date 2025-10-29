@@ -132,8 +132,9 @@ function RegisterStudent() {
                         <h2 style={{ color: "#800000" }}>Important Notice</h2>
                         <p>
                             Kindly note that the migration of database of the <strong>Student Management System Database</strong>
-                            database will be taking place tonight by 10:00pm- 3:00am. During these hours, you may experience difficulty in logging in. <br />
-                            Thanks in anticipation.</p>
+                            database will be migrated tonight by 10:00pm- 3:00am. During these hours, you may experience difficulty in while registering. Teachers/Parents/Students/Guardians are therefore
+                            advsied never to register during this period because their information may be lost. <br />
+                            Thanks in anticipation👏.</p>
                         <button style={buttonStyle} onClick={handleClosePopup}>
                             OK, I Understand
                         </button>
