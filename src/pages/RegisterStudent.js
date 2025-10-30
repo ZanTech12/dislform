@@ -67,7 +67,7 @@ function RegisterStudent() {
             setPassport(null);
         } catch (err) {
             if (err.response) {
-                // ✅ Handle duplicate student clearly
+                // ✅ Handle duplicated student clearly
                 if (err.response.status === 409) {
                     // Use backend message if exists, otherwise fallback
                     const message =
