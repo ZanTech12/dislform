@@ -10,7 +10,7 @@ function AdminRecycleBin() {
     const fetchDeleted = async () => {
         try {
             setLoading(true);
-            const res = await axios.get("http://72.61.160.196:5000/api/students/recyclebin");
+            const res = await axios.get("https://datforte.duckdns.org/api/students/recyclebin");
             setDeletedStudents(res.data);
         } catch (err) {
             console.error("Error fetching deleted students:", err);
@@ -24,7 +24,7 @@ function AdminRecycleBin() {
     const handleRestore = async (id) => {
         if (!window.confirm("Are you sure you want to restore this student?")) return;
         try {
-            await axios.put(`http://72.61.160.196:5000/api/students/restore/${id}`);
+            await axios.put(`https://datforte.duckdns.org/api/students/restore/${id}`);
             alert("✅ Student restored successfully!");
             fetchDeleted();
         } catch (err) {
@@ -37,7 +37,7 @@ function AdminRecycleBin() {
     const handlePermanentDelete = async (id) => {
         if (!window.confirm("⚠️ Are you sure you want to permanently delete this student? This action cannot be undone.")) return;
         try {
-            await axios.delete(`http://72.61.160.196:5000/api/students/permanent/${id}`);
+            await axios.delete(`https://datforte.duckdns.org/api/students/permanent/${id}`);
             alert("✅ Student permanently deleted!");
             fetchDeleted();
         } catch (err) {
@@ -86,7 +86,7 @@ function AdminRecycleBin() {
                                             <td>
                                                 {student.passport ? (
                                                     <img
-                                                        src={`http://72.61.160.196:5000/uploads/${student.passport}`}
+                                                        src={`https://datforte.duckdns.org/uploads/${student.passport}`}
                                                         alt="Passport"
                                                         style={passportImg}
                                                     />

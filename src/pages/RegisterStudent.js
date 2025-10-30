@@ -55,7 +55,7 @@ function RegisterStudent() {
             if (passport) fd.append("passport", passport);
 
             const response = await axios.post(
-                "http://72.61.160.196:5000/api/students/register",
+                "https://datforte.duckdns.org/api/students/register",
                 fd,
                 {
                     headers: { "Content-Type": "multipart/form-data" },
