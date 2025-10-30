@@ -131,10 +131,10 @@ function RegisterStudent() {
                     <div style={popupStyle}>
                         <h2 style={{ color: "#800000" }}>Important Notice</h2>
                         <p>
-                            Kindly note that the migration of database of the <strong>Student Management System Database</strong>
-                            will be migrated tonight by 10:00pm- 3:00am. During these hours, you may experience difficulty in while registering. Teachers/Parents/Students/Guardians are therefore
-                            advsied never to register during this period because their information may be lost. <br />
-                            Thanks in anticipation👏.</p>
+                            Students/Teachers/Parents are required to register their wards
+                            to the <strong>Student Management System</strong> because
+                            it will serve as their database for academic record(s).
+                        </p>
                         <button style={buttonStyle} onClick={handleClosePopup}>
                             OK, I Understand
                         </button>
