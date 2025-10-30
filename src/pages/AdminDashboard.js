@@ -25,7 +25,7 @@ function AdminDashboard() {
 
     const fetchClassCounts = async () => {
         try {
-            const res = await axios.get("https://datregdatabase-1.onrender.com/api/students");
+            const res = await axios.get("http://72.61.160.196:5000/api/students");
             const students = res.data;
 
             // Initialize all classes with 0

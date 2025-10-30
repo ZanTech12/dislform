@@ -55,7 +55,7 @@ function RegisterStudent() {
             if (passport) fd.append("passport", passport);
 
             const response = await axios.post(
-                "https://datregdatabase-1.onrender.com/api/students/register",
+                "http://72.61.160.196:5000/api/students/register",
                 fd,
                 {
                     headers: { "Content-Type": "multipart/form-data" },

@@ -36,7 +36,7 @@ function ClassStudents() {
     const fetchStudents = async () => {
         try {
             setLoading(true);
-            const res = await axios.get("https://datregdatabase-1.onrender.com/api/students");
+            const res = await axios.get("http://72.61.160.196:5000/api/students");
             const classStudents = res.data.filter(
                 (student) => student.classLevel === classLevel
             );
@@ -83,7 +83,7 @@ function ClassStudents() {
             if (passport) fd.append("passport", passport);
 
             await axios.put(
-                `https://datregdatabase-1.onrender.com/api/students/${editingStudent._id}`,
+                `http://72.61.160.196:5000/api/students/${editingStudent._id}`,
                 fd,
                 { headers: { "Content-Type": "multipart/form-data" } }
             );
