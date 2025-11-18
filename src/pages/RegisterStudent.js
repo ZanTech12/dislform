@@ -6,7 +6,6 @@ import bgImage from "../background.jpg";
 import studentImg from "../student.jpg";
 import AdminFooter from "../components/AdminFooter";
 import { FaUser, FaCalendarAlt, FaFlag, FaSchool, FaEnvelope, FaPhone } from "react-icons/fa";
-import nigeriaLgas from "../data/nigeriaLgas.json";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -25,75 +24,52 @@ function RegisterStudent() {
         classLevel: "",
         section: "",
         session: "",
-        term: "",          // <-- term field added here
+        term: "",
         previousSchool: "",
         dateOfAdmission: "",
-        phoneNumber: "",
+        phone: "", // Changed back to "phone" to match backend expectation
     };
 
-    // ✅ Always show popup on page load
     const [showPopup, setShowPopup] = useState(true);
-
-    const handleClosePopup = () => {
-        setShowPopup(false);
-    };
-
-
     const [form, setForm] = useState(initialForm);
     const [passport, setPassport] = useState(null);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [isTablet, setIsTablet] = useState(window.innerWidth > 768 && window.innerWidth <= 1024);
+    const [availableLgas, setAvailableLgas] = useState([]);
+    const [nigeriaLgas, setNigeriaLgas] = useState({});
+    const [uploadProgress, setUploadProgress] = useState(0);
 
-    const availableLgas = form.stateOfOrigin ? nigeriaLgas[form.stateOfOrigin] || [] : [];
-
-    const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const fd = new FormData();
-            Object.keys(form).forEach((key) => fd.append(key, form[key]));
-            if (passport) fd.append("passport", passport);
-
-            const response = await axios.post(
-                "https://datforte.duckdns.org/api/students/register",
-                fd,
-                {
-                    headers: { "Content-Type": "multipart/form-data" },
-                }
-            );
-
-            alert("✅ Registration successful!");
-            setForm(initialForm);
-            setPassport(null);
-        } catch (err) {
-            if (err.response) {
-                // ✅ Handle duplicated student clearly
-                if (err.response.status === 409) {
-                    // Use backend message if exists, otherwise fallback
-                    const message =
-                        err.response.data?.message ||
-                        "⚠️ A student with this information already exists!";
-                    alert(message);
-                } else {
-                    alert(`❌ ${err.response.data?.message || "Error registering student"}`);
-                }
-            } else {
-                alert("❌ Network or server error");
-            }
-            console.error(err);
-        }
-    };
-
-
-    const inputField = (icon, element) => (
-        <div style={{ ...inputWrapper, flex: isMobile ? "100%" : "1" }}>
-            <span style={iconStyle}>{icon}</span>
-            {element}
-        </div>
-    );
-
+    // Load Nigeria LGAs data
     useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        const loadLgas = async () => {
+            try {
+                const response = await import("../data/nigeriaLgas.json");
+                setNigeriaLgas(response.default);
+            } catch (error) {
+                console.error("Error loading LGAs:", error);
+                alert("Error loading location data. Please refresh the page.");
+            }
+        };
+
+        loadLgas();
+    }, []);
+
+    // Update available LGAs when state changes
+    useEffect(() => {
+        if (form.stateOfOrigin) {
+            const lgas = nigeriaLgas[form.stateOfOrigin] || [];
+            setAvailableLgas(lgas);
+        } else {
+            setAvailableLgas([]);
+        }
+    }, [form.stateOfOrigin, nigeriaLgas]);
+
+    // Handle responsive design
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 768);
+            setIsTablet(window.innerWidth > 768 && window.innerWidth <= 1024);
+        };
         window.addEventListener("resize", handleResize);
 
         const styleSheet = document.styleSheets[0];
@@ -108,6 +84,97 @@ function RegisterStudent() {
 
         return () => window.removeEventListener("resize", handleResize);
     }, []);
+
+    const handleClosePopup = () => {
+        setShowPopup(false);
+    };
+
+    const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+    // Simplified file handling without compression
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Basic validation only
+            if (!file.type.match('image.*')) {
+                alert('Please select an image file');
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Image size should be less than 5MB');
+                return;
+            }
+
+            setPassport(file);
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const fd = new FormData();
+
+            // Log form data for debugging
+            console.log("Submitting form data:", form);
+
+            Object.keys(form).forEach((key) => {
+                fd.append(key, form[key]);
+            });
+
+            if (passport) {
+                console.log("Uploading passport:", passport.name, passport.size);
+                fd.append("passport", passport);
+            }
+
+            const response = await axios.post(
+                "https://datforte.duckdns.org/api/students/register",
+                fd,
+                {
+                    headers: { "Content-Type": "multipart/form-data" },
+                    onUploadProgress: (progressEvent) => {
+                        const progress = Math.round(
+                            (progressEvent.loaded * 100) / progressEvent.total
+                        );
+                        setUploadProgress(progress);
+                    },
+                }
+            );
+
+            alert("✅ Registration successful!");
+            setForm(initialForm);
+            setPassport(null);
+            setUploadProgress(0);
+        } catch (err) {
+            console.error("Registration error:", err);
+
+            if (err.response) {
+                console.error("Server response:", err.response.data);
+
+                if (err.response.status === 409) {
+                    const message =
+                        err.response.data?.message ||
+                        "⚠️ A student with this information already exists!";
+                    alert(message);
+                } else {
+                    alert(`❌ Server error: ${err.response.status} - ${err.response.data?.message || "Unknown error"}`);
+                }
+            } else if (err.request) {
+                alert("❌ No response from server. Check your internet connection.");
+            } else {
+                alert(`❌ Error: ${err.message}`);
+            }
+
+            setUploadProgress(0);
+        }
+    };
+
+    const inputField = (icon, element) => (
+        <div style={{ ...inputWrapper, flex: isMobile ? "100%" : "1" }}>
+            <span style={iconStyle}>{icon}</span>
+            {element}
+        </div>
+    );
 
     return (
         <div>
@@ -125,7 +192,6 @@ function RegisterStudent() {
       `}
             </style>
 
-            {/* ✅ Popup always shows on page load */}
             {showPopup && (
                 <div style={overlayStyle}>
                     <div style={popupStyle}>
@@ -143,7 +209,11 @@ function RegisterStudent() {
             )}
             <div style={background}>
                 <div style={outerContainer}>
-                    <div style={{ ...container, maxWidth: isMobile ? "95%" : "750px" }}>
+                    <div style={{
+                        ...container,
+                        maxWidth: isTablet ? "850px" : "750px",
+                        padding: isMobile ? "15px" : isTablet ? "20px" : "25px"
+                    }}>
                         <div style={marqueeContainer}>
                             <img src={studentImg} alt="Student" style={marqueeImage} />
                             <p style={{ ...marqueeText, whiteSpace: isMobile ? "normal" : "nowrap" }}>
@@ -211,17 +281,16 @@ function RegisterStudent() {
                             </div>
 
                             {/* Date of Birth */}
-
                             <div style={{ marginBottom: "15px" }}>
                                 <label htmlFor="dateOfBirth" style={{ display: "block", marginBottom: "5px" }}>
                                     Date of Birth:
                                 </label>
-                                <input
-                                    type="date"
+                                <DatePicker
                                     id="dateOfBirth"
-                                    name="dateOfBirth"
-                                    value={form.dateOfBirth}
-                                    onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
+                                    selected={form.dateOfBirth ? new Date(form.dateOfBirth) : null}
+                                    onChange={(date) => setForm({ ...form, dateOfBirth: date.toISOString().split('T')[0] })}
+                                    dateFormat="yyyy-MM-dd"
+                                    placeholderText="Select date of birth"
                                     style={input}
                                     required
                                 />
@@ -291,7 +360,7 @@ function RegisterStudent() {
                                     value={form.lga}
                                     onChange={handleChange}
                                     style={input}
-                                    disabled={!form.stateOfOrigin} // only enabled if state is selected
+                                    disabled={!form.stateOfOrigin}
                                     required
                                 >
                                     <option value="">Select Local Government Area</option>
@@ -314,14 +383,13 @@ function RegisterStudent() {
                                     onChange={handleChange}
                                     style={{
                                         ...input,
-                                        height: "80px", // taller for multiline input
-                                        resize: "vertical" // user can resize vertically
+                                        height: "80px",
+                                        resize: "vertical"
                                     }}
                                     placeholder="Enter your home address"
                                     required
                                 />
                             </div>
-
 
                             <div style={{ marginBottom: "15px" }}>
                                 <label htmlFor="phone" style={{ display: "block", marginBottom: "5px" }}>
@@ -333,13 +401,9 @@ function RegisterStudent() {
                                     name="phone"
                                     value={form.phone}
                                     onChange={(e) => {
-                                        // Remove all non-digit characters
                                         let cleaned = e.target.value.replace(/\D/g, "");
-
-                                        // Limit to 10 digits
                                         if (cleaned.length > 10) cleaned = cleaned.slice(0, 10);
 
-                                        // Format as XXX-XXX-XXXX
                                         let formatted = cleaned;
                                         if (cleaned.length > 6) {
                                             formatted = `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
@@ -354,8 +418,6 @@ function RegisterStudent() {
                                     required
                                 />
                             </div>
-
-
 
                             <div style={{ marginBottom: "15px" }}>
                                 <label htmlFor="classLevel" style={{ display: "block", marginBottom: "5px" }}>
@@ -423,6 +485,7 @@ function RegisterStudent() {
                                     <option value="Third Term">Third Term</option>
                                 </select>
                             </div>
+
                             <div style={{ marginBottom: "15px" }}>
                                 <label htmlFor="session" style={{ display: "block", marginBottom: "5px" }}>
                                     Session:
@@ -440,19 +503,18 @@ function RegisterStudent() {
                                     <option value="2026/2027">2026/2027</option>
                                 </select>
                             </div>
-                            {/* Date of Admission */}
 
+                            {/* Date of Admission */}
                             <div style={{ marginBottom: "15px" }}>
                                 <label htmlFor="dateOfAdmission" style={{ display: "block", marginBottom: "5px" }}>
                                     Date of Admission:
                                 </label>
-                                <input
-                                    type="date"
+                                <DatePicker
                                     id="dateOfAdmission"
-                                    name="dateOfAdmission"
-                                    placeholder="YYYY-MM-DD"
-                                    value={form.dateOfAdmission || ""}
-                                    onChange={handleChange}
+                                    selected={form.dateOfAdmission ? new Date(form.dateOfAdmission) : null}
+                                    onChange={(date) => setForm({ ...form, dateOfAdmission: date.toISOString().split('T')[0] })}
+                                    dateFormat="yyyy-MM-dd"
+                                    placeholderText="Select date of admission"
                                     style={input}
                                     required
                                 />
@@ -481,31 +543,39 @@ function RegisterStudent() {
                                     type="file"
                                     id="passport"
                                     name="passport"
-                                    onChange={(e) => setPassport(e.target.files[0])}
+                                    onChange={handleFileChange}
                                     style={input}
+                                    accept="image/*"
                                 />
+                                <p style={{ fontSize: "12px", color: "#666", marginTop: "5px" }}>
+                                    Maximum file size: 500KB
+                                </p>
+                                {uploadProgress > 0 && (
+                                    <div style={{ marginTop: "10px" }}>
+                                        <progress value={uploadProgress} max="100" style={{ width: "100%" }} />
+                                        <span>{uploadProgress}%</span>
+                                    </div>
+                                )}
                             </div>
 
                             <button
                                 type="submit"
                                 style={btn}
-                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1e7625c9")} // hover color
-                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#800000")} // original color
+                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1e7625c9")}
+                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#800000")}
                             >
                                 Register
                             </button>
-
                         </form>
                     </div>
-                </div >
-            </div >
-
+                </div>
+            </div>
             <AdminFooter />
-        </div >
+        </div>
     );
 }
 
-// --- Styles remain unchanged ---
+// Styles remain the same
 const background = {
     minHeight: "100vh",
     display: "flex",
@@ -528,7 +598,6 @@ const outerContainer = {
 
 const container = {
     backgroundColor: "rgba(255,255,255,0.97)",
-    padding: "25px",
     borderRadius: "10px",
     boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
     width: "100%",
@@ -553,6 +622,7 @@ const marqueeImage = {
     animation: "moveLeftRight 4s linear infinite alternate",
     marginRight: "10px",
 };
+
 const overlayStyle = {
     position: "fixed",
     top: 0,
