@@ -36,7 +36,7 @@ function ClassStudents() {
     const fetchStudents = async () => {
         try {
             setLoading(true);
-            const res = await axios.get("https://datforte.duckdns.org/api/students");
+            const res = await axios.get("https://zannu.duckdns.org/api/students");
             const classStudents = res.data.filter(
                 (student) => student.classLevel === classLevel
             );
@@ -83,7 +83,7 @@ function ClassStudents() {
             if (passport) fd.append("passport", passport);
 
             await axios.put(
-                `https://datforte.duckdns.org/api/students/${editingStudent._id}`,
+                `https://zannu.duckdns.org/api/students/${editingStudent._id}`,
                 fd,
                 { headers: { "Content-Type": "multipart/form-data" } }
             );

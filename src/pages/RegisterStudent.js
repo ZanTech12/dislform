@@ -128,7 +128,7 @@ function RegisterStudent() {
             }
 
             const response = await axios.post(
-                "https://datforte.duckdns.org/api/students/register",
+                "https://zannu.duckdns.org/api/students/register",
                 fd,
                 {
                     headers: { "Content-Type": "multipart/form-data" },

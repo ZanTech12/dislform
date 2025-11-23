@@ -25,7 +25,7 @@ function AdminDashboard() {
 
     const fetchClassCounts = async () => {
         try {
-            const res = await axios.get("https://datforte.duckdns.org/api/students");
+            const res = await axios.get("https://zannu.duckdns.org/api/students");
             const students = res.data;
 
             // Initialize all classes with 0
