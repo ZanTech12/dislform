@@ -188,6 +188,7 @@ function ClassStudents() {
                         <thead>
                             <tr>
                                 <th>#</th>
+                                <th>Passport</th>
                                 <th>Full Name</th>
                                 <th>Admission Number</th>
                                 <th>Actions</th>
@@ -198,9 +199,27 @@ function ClassStudents() {
                                 <tr key={st._id}>
                                     <td>{idx + 1}</td>
                                     <td>
-                                        {[st.firstName, st.middleName, st.lastName]
-                                            .filter(Boolean)
-                                            .join(" ")}
+                                        {st.passport ? (
+                                            <img
+                                                src={`https://zannu.duckdns.org/uploads/${st.passport}`}
+                                                alt="Passport"
+                                                style={passportImageStyle}
+                                            />
+                                        ) : (
+                                            <div style={noImagePlaceholder}>
+                                                <span>No Image</span>
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td>
+                                        <div style={nameContainer}>
+                                            <div style={fullName}>
+                                                {[st.firstName, st.middleName, st.lastName]
+                                                    .filter(Boolean)
+                                                    .join(" ")}
+                                            </div>
+                                            <div style={classInfo}>{st.classLevel}</div>
+                                        </div>
                                     </td>
                                     <td>{st.admissionNumber || "N/A"}</td>
                                     <td>
@@ -341,5 +360,43 @@ const modalContent = { backgroundColor: "white", padding: "20px", borderRadius: 
 const formStyle = { display: "grid", gridTemplateColumns: "1fr", gap: "10px", width: "100%" };
 const input = { padding: "10px", borderRadius: "5px", border: "1px solid #ccc", width: "100%", boxSizing: "border-box" };
 const label = { fontWeight: "bold", marginTop: "10px" };
+
+// New styles for passport images
+const passportImageStyle = {
+    width: '50px',
+    height: '50px',
+    borderRadius: '50%',
+    objectFit: 'cover',
+    border: '2px solid #e0e0e0'
+};
+
+const noImagePlaceholder = {
+    width: '50px',
+    height: '50px',
+    borderRadius: '50%',
+    backgroundColor: '#f5f5f5',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: '2px solid #e0e0e0',
+    fontSize: '10px',
+    color: '#888'
+};
+
+const nameContainer = {
+    display: 'flex',
+    flexDirection: 'column'
+};
+
+const fullName = {
+    fontWeight: 'bold',
+    marginBottom: '4px'
+};
+
+const classInfo = {
+    fontSize: '12px',
+    color: '#666',
+    fontStyle: 'italic'
+};
 
 export default ClassStudents;
