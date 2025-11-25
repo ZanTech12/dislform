@@ -1,5 +1,5 @@
 import "../App.css";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 
@@ -35,12 +35,21 @@ function ClassStudents() {
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [uploadStatus, setUploadStatus] = useState('');
     const [retryCount, setRetryCount] = useState(0);
+    const [networkType, setNetworkType] = useState('unknown');
+    const [uploadMethod, setUploadMethod] = useState('formData');
+    const [imageInfo, setImageInfo] = useState(null);
+    const fileInputRef = useRef(null);
 
-    // Configure axios with increased timeout
-    axios.defaults.timeout = 60000; // 60 seconds timeout
+    // Configure axios with different timeouts for different scenarios
+    const axiosInstance = axios.create({
+        timeout: 90000, // 90 seconds
+        maxContentLength: 10 * 1024 * 1024, // 10MB max
+        maxBodyLength: 10 * 1024 * 1024,
+    });
 
     useEffect(() => {
         fetchStudents();
+
         // Check if device is mobile
         const checkMobile = () => {
             setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
@@ -48,25 +57,37 @@ function ClassStudents() {
         checkMobile();
         window.addEventListener('resize', checkMobile);
 
-        // Monitor network status
-        const handleOnline = () => setIsOnline(true);
-        const handleOffline = () => setIsOnline(false);
-        window.addEventListener('online', handleOnline);
-        window.addEventListener('offline', handleOffline);
+        // Monitor network status and type
+        const updateNetworkInfo = () => {
+            setIsOnline(navigator.onLine);
+            if (navigator.connection) {
+                const connection = navigator.connection;
+                setNetworkType(connection.effectiveType || 'unknown');
+            }
+        };
+
+        updateNetworkInfo();
+        window.addEventListener('online', updateNetworkInfo);
+        window.addEventListener('offline', updateNetworkInfo);
+
+        if (navigator.connection) {
+            navigator.connection.addEventListener('change', updateNetworkInfo);
+        }
 
         return () => {
             window.removeEventListener('resize', checkMobile);
-            window.removeEventListener('online', handleOnline);
-            window.removeEventListener('offline', handleOffline);
+            window.removeEventListener('online', updateNetworkInfo);
+            window.removeEventListener('offline', updateNetworkInfo);
+            if (navigator.connection) {
+                navigator.connection.removeEventListener('change', updateNetworkInfo);
+            }
         };
     }, [classLevel]);
 
     const fetchStudents = async () => {
         try {
             setLoading(true);
-            const res = await axios.get("https://zannu.duckdns.org/api/students", {
-                timeout: 30000 // 30 seconds for fetching
-            });
+            const res = await axiosInstance.get("https://zannu.duckdns.org/api/students");
             const classStudents = res.data.filter(
                 (student) => student.classLevel === classLevel
             );
@@ -114,6 +135,8 @@ function ClassStudents() {
         setError(null);
         setUploadStatus('');
         setRetryCount(0);
+        setUploadMethod('formData');
+        setImageInfo(null);
     };
 
     const handleChange = (e) => {
@@ -123,39 +146,206 @@ function ClassStudents() {
         setError(null);
     };
 
-    // Compress image before upload
-    const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.7) => {
-        return new Promise((resolve) => {
+    // Smart image resizing with multiple attempts
+    const smartResizeImage = async (file) => {
+        const sizePresets = [
+            { maxWidth: 1200, maxHeight: 1200, quality: 0.9, label: "Large" },
+            { maxWidth: 800, maxHeight: 800, quality: 0.8, label: "Medium" },
+            { maxWidth: 600, maxHeight: 600, quality: 0.7, label: "Small" },
+            { maxWidth: 400, maxHeight: 400, quality: 0.6, label: "Very Small" },
+            { maxWidth: 300, maxHeight: 300, quality: 0.5, label: "Tiny" },
+            { maxWidth: 200, maxHeight: 200, quality: 0.4, label: "Minimal" }
+        ];
+
+        // Determine target size based on network and device
+        const getTargetSize = () => {
+            if (isMobile) {
+                switch (networkType) {
+                    case 'slow-2g':
+                    case '2g':
+                        return 200 * 1024; // 200KB
+                    case '3g':
+                        return 400 * 1024; // 400KB
+                    default:
+                        return 600 * 1024; // 600KB
+                }
+            } else {
+                return 2 * 1024 * 1024; // 2MB for desktop
+            }
+        };
+
+        const targetSize = getTargetSize();
+        const originalSize = file.size;
+        const originalSizeKB = Math.round(originalSize / 1024);
+
+        setUploadStatus(`Analyzing image (${originalSizeKB}KB)...`);
+
+        // Get original image dimensions
+        const originalDimensions = await new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                resolve({ width: img.width, height: img.height });
+                URL.revokeObjectURL(img.src);
+            };
+            img.src = URL.createObjectURL(file);
+        });
+
+        setImageInfo({
+            original: {
+                size: originalSizeKB,
+                width: originalDimensions.width,
+                height: originalDimensions.height
+            }
+        });
+
+        // Try each preset until we find one that works
+        for (let i = 0; i < sizePresets.length; i++) {
+            const preset = sizePresets[i];
+            setUploadStatus(`Trying ${preset.label} size (${preset.maxWidth}x${preset.maxHeight})...`);
+
+            try {
+                const resizedFile = await resizeImage(file, preset);
+                const newSizeKB = Math.round(resizedFile.size / 1024);
+
+                setImageInfo(prev => ({
+                    ...prev,
+                    current: {
+                        size: newSizeKB,
+                        width: preset.maxWidth,
+                        height: preset.maxHeight,
+                        quality: preset.quality,
+                        preset: preset.label
+                    }
+                }));
+
+                if (resizedFile.size <= targetSize) {
+                    setUploadStatus(`✓ Image optimized to ${newSizeKB}KB`);
+                    return resizedFile;
+                }
+
+                // If this is the last preset and still too large, try extreme compression
+                if (i === sizePresets.length - 1) {
+                    setUploadStatus(`Applying maximum compression...`);
+                    const ultraCompressed = await resizeImage(file, {
+                        maxWidth: 150,
+                        maxHeight: 150,
+                        quality: 0.2
+                    });
+
+                    const ultraSizeKB = Math.round(ultraCompressed.size / 1024);
+                    setImageInfo(prev => ({
+                        ...prev,
+                        current: {
+                            size: ultraSizeKB,
+                            width: 150,
+                            height: 150,
+                            quality: 0.2,
+                            preset: "Ultra Compressed"
+                        }
+                    }));
+
+                    setUploadStatus(`✓ Image compressed to ${ultraSizeKB}KB (minimum size)`);
+                    return ultraCompressed;
+                }
+            } catch (err) {
+                console.error(`Error with preset ${preset.label}:`, err);
+                continue;
+            }
+        }
+
+        throw new Error("Unable to compress image to uploadable size");
+    };
+
+    // Core image resize function
+    const resizeImage = (file, options) => {
+        return new Promise((resolve, reject) => {
+            const { maxWidth, maxHeight, quality = 0.7 } = options;
+
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             const img = new Image();
 
             img.onload = () => {
-                // Calculate new dimensions
-                let width = img.width;
-                let height = img.height;
+                try {
+                    // Calculate new dimensions maintaining aspect ratio
+                    let { width, height } = calculateDimensions(
+                        img.width,
+                        img.height,
+                        maxWidth,
+                        maxHeight
+                    );
 
-                if (width > height) {
-                    if (width > maxWidth) {
-                        height *= maxWidth / width;
-                        width = maxWidth;
-                    }
-                } else {
-                    if (height > maxHeight) {
-                        width *= maxHeight / height;
-                        height = maxHeight;
-                    }
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    // Draw with better quality settings
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Convert to blob
+                    canvas.toBlob(
+                        (blob) => {
+                            if (blob) {
+                                const resizedFile = new File([blob], file.name, {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now()
+                                });
+                                resolve(resizedFile);
+                            } else {
+                                reject(new Error('Failed to create blob'));
+                            }
+                        },
+                        'image/jpeg',
+                        quality
+                    );
+                } catch (error) {
+                    reject(error);
+                } finally {
+                    URL.revokeObjectURL(img.src);
                 }
-
-                canvas.width = width;
-                canvas.height = height;
-
-                // Draw and compress
-                ctx.drawImage(img, 0, 0, width, height);
-                canvas.toBlob(resolve, 'image/jpeg', quality);
             };
 
+            img.onerror = () => reject(new Error('Failed to load image'));
             img.src = URL.createObjectURL(file);
+        });
+    };
+
+    // Calculate dimensions maintaining aspect ratio
+    const calculateDimensions = (width, height, maxWidth, maxHeight) => {
+        if (width <= maxWidth && height <= maxHeight) {
+            return { width, height };
+        }
+
+        const aspectRatio = width / height;
+
+        if (width > height) {
+            // Landscape
+            if (width > maxWidth) {
+                width = maxWidth;
+                height = width / aspectRatio;
+            }
+        } else {
+            // Portrait
+            if (height > maxHeight) {
+                height = maxHeight;
+                width = height * aspectRatio;
+            }
+        }
+
+        return {
+            width: Math.round(width),
+            height: Math.round(height)
+        };
+    };
+
+    // Convert file to base64 as fallback
+    const fileToBase64 = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
         });
     };
 
@@ -169,25 +359,27 @@ function ClassStudents() {
                 return;
             }
 
+            // Check initial file size
+            if (file.size > 20 * 1024 * 1024) { // 20MB initial limit
+                setError("Image is too large (max 20MB). Please choose a smaller image.");
+                return;
+            }
+
             setUploadStatus('Processing image...');
+            setImageInfo(null);
 
             try {
-                // Compress the image
-                const compressedFile = await compressImage(file);
+                // Smart resize the image
+                const processedFile = await smartResizeImage(file);
 
-                // Check if compression helped
-                if (compressedFile.size > 5 * 1024 * 1024) {
-                    // Try with lower quality
-                    const smallerFile = await compressImage(file, 600, 600, 0.5);
-                    if (smallerFile.size > 5 * 1024 * 1024) {
-                        setError("Image is too large even after compression. Please choose a smaller image.");
-                        setUploadStatus('');
-                        return;
-                    }
-                    setPassport(smallerFile);
-                } else {
-                    setPassport(compressedFile);
+                // Final check
+                if (processedFile.size > 5 * 1024 * 1024) { // 5MB absolute limit
+                    setError("Image is still too large after processing. Please choose a different image.");
+                    setUploadStatus('');
+                    return;
                 }
+
+                setPassport(processedFile);
 
                 // Create preview
                 const reader = new FileReader();
@@ -195,15 +387,77 @@ function ClassStudents() {
                     setPassportPreview(reader.result);
                     setUploadStatus('');
                 };
-                reader.readAsDataURL(compressedFile);
+                reader.readAsDataURL(processedFile);
 
             } catch (err) {
-                console.error("Error compressing image:", err);
+                console.error("Error processing image:", err);
                 setError("Failed to process image. Please try another one.");
                 setUploadStatus('');
             }
         }
         setError(null);
+    };
+
+    const uploadWithFormData = async (studentData, file) => {
+        const fd = new FormData();
+
+        // Append all form fields
+        Object.keys(studentData).forEach((key) => {
+            if (studentData[key] !== "") {
+                fd.append(key, studentData[key]);
+            }
+        });
+
+        // Append passport
+        if (file) {
+            fd.append("passport", file);
+        }
+
+        return await axiosInstance.put(
+            `https://zannu.duckdns.org/api/students/${editingStudent._id}`,
+            fd,
+            {
+                onUploadProgress: (progressEvent) => {
+                    const percentCompleted = Math.round(
+                        (progressEvent.loaded * 100) / progressEvent.total
+                    );
+                    setUploadProgress(percentCompleted);
+                },
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            }
+        );
+    };
+
+    const uploadWithBase64 = async (studentData, file) => {
+        const base64 = await fileToBase64(file);
+
+        const payload = {
+            ...studentData,
+            passportBase64: base64,
+            passportName: file.name
+        };
+
+        // Simulate progress for base64 upload
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += 10;
+            setUploadProgress(progress);
+            if (progress >= 90) {
+                clearInterval(progressInterval);
+            }
+        }, 200);
+
+        const response = await axiosInstance.put(
+            `https://zannu.duckdns.org/api/students/${editingStudent._id}`,
+            payload
+        );
+
+        clearInterval(progressInterval);
+        setUploadProgress(100);
+
+        return response;
     };
 
     const handleSubmit = async (e) => {
@@ -219,42 +473,25 @@ function ClassStudents() {
         setUploadStatus('Preparing upload...');
         setRetryCount(0);
 
-        const uploadWithRetry = async (attempt = 1) => {
+        const uploadWithRetry = async (attempt = 1, method = 'formData') => {
             try {
-                setUploadStatus(`Uploading... (Attempt ${attempt})`);
+                setUploadStatus(`Uploading... (Attempt ${attempt} - ${method === 'base64' ? 'Base64' : 'FormData'})`);
 
-                // Create FormData object
-                const fd = new FormData();
-
-                // Append all form fields
-                Object.keys(form).forEach((key) => {
-                    if (form[key] !== "") {
-                        fd.append(key, form[key]);
+                // Prepare form data
+                const studentData = { ...form };
+                Object.keys(studentData).forEach(key => {
+                    if (studentData[key] === "") {
+                        delete studentData[key];
                     }
                 });
 
-                // Append passport if a new one is selected
-                if (passport) {
-                    fd.append("passport", passport);
-                }
+                let response;
 
-                // Make the API request with extended timeout and progress tracking
-                const response = await axios.put(
-                    `https://zannu.duckdns.org/api/students/${editingStudent._id}`,
-                    fd,
-                    {
-                        timeout: 120000, // 2 minutes timeout
-                        onUploadProgress: (progressEvent) => {
-                            const percentCompleted = Math.round(
-                                (progressEvent.loaded * 100) / progressEvent.total
-                            );
-                            setUploadProgress(percentCompleted);
-                        },
-                        headers: {
-                            'Content-Type': 'multipart/form-data'
-                        }
-                    }
-                );
+                if (method === 'formData') {
+                    response = await uploadWithFormData(studentData, passport);
+                } else {
+                    response = await uploadWithBase64(studentData, passport);
+                }
 
                 setUploadStatus('Upload complete!');
                 setTimeout(() => {
@@ -269,14 +506,12 @@ function ClassStudents() {
 
                 let errorMessage = "Failed to update student";
                 let shouldRetry = false;
+                let switchMethod = false;
 
                 if (err.code === 'ECONNABORTED') {
                     errorMessage = "Upload timed out. This might be due to a slow connection.";
                     shouldRetry = attempt < 3;
                 } else if (err.response) {
-                    console.error("Error response data:", err.response.data);
-                    console.error("Error status:", err.response.status);
-
                     if (err.response.status === 413) {
                         errorMessage = "File too large. Please choose a smaller image.";
                     } else if (err.response.status >= 500) {
@@ -288,14 +523,22 @@ function ClassStudents() {
                 } else if (err.request) {
                     errorMessage = "No response from server. Please check your connection.";
                     shouldRetry = attempt < 3;
+                    // If FormData fails on mobile, try Base64
+                    if (isMobile && method === 'formData' && attempt === 1) {
+                        switchMethod = true;
+                    }
                 } else {
                     errorMessage = err.message;
                 }
 
-                if (shouldRetry) {
+                if (switchMethod) {
+                    setUploadMethod('base64');
+                    setUploadStatus('Switching to Base64 upload method...');
+                    setTimeout(() => uploadWithRetry(1, 'base64'), 1000);
+                } else if (shouldRetry) {
                     setRetryCount(attempt);
                     setUploadStatus(`Retrying... (${attempt}/3)`);
-                    setTimeout(() => uploadWithRetry(attempt + 1), 2000 * attempt); // Exponential backoff
+                    setTimeout(() => uploadWithRetry(attempt + 1, method), 2000 * attempt);
                 } else {
                     setError(errorMessage);
                     setUploadStatus('');
@@ -312,6 +555,11 @@ function ClassStudents() {
         setError(null);
         setUploadStatus('');
         setRetryCount(0);
+        setUploadMethod('formData');
+        setImageInfo(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
     };
 
     // ✅ enums aligned with the backend model
@@ -336,6 +584,20 @@ function ClassStudents() {
                     textAlign: 'center'
                 }}>
                     ⚠️ You appear to be offline. Some features may not work properly.
+                </div>
+            )}
+
+            {isMobile && networkType !== 'unknown' && (
+                <div style={{
+                    backgroundColor: '#e3f2fd',
+                    color: '#000',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    marginBottom: '10px',
+                    textAlign: 'center',
+                    fontSize: '12px'
+                }}>
+                    📶 Network: {networkType.toUpperCase()} {uploadMethod === 'base64' && '| Using Base64 upload'}
                 </div>
             )}
 
@@ -496,17 +758,45 @@ function ClassStudents() {
                                             onClick={() => {
                                                 setPassport(null);
                                                 setPassportPreview(null);
+                                                setImageInfo(null);
+                                                if (fileInputRef.current) {
+                                                    fileInputRef.current.value = '';
+                                                }
                                             }}
                                         >
                                             ✕
                                         </button>
                                     </div>
                                 )}
+
+                                {/* Image Info Display */}
+                                {imageInfo && (
+                                    <div style={imageInfoContainer}>
+                                        {imageInfo.original && (
+                                            <div style={imageInfoItem}>
+                                                <span style={imageInfoLabel}>Original:</span>
+                                                <span style={imageInfoValue}>
+                                                    {imageInfo.original.width}×{imageInfo.original.height} ({imageInfo.original.size}KB)
+                                                </span>
+                                            </div>
+                                        )}
+                                        {imageInfo.current && (
+                                            <div style={imageInfoItem}>
+                                                <span style={imageInfoLabel}>Optimized:</span>
+                                                <span style={imageInfoValue}>
+                                                    {imageInfo.current.width}×{imageInfo.current.height} ({imageInfo.current.size}KB) - {imageInfo.current.preset}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 <div style={buttonContainer}>
                                     <label htmlFor="passport-upload" style={uploadButton}>
                                         {isMobile ? "📷 Take Photo" : "📁 Choose File"}
                                     </label>
                                     <input
+                                        ref={fileInputRef}
                                         id="passport-upload"
                                         type="file"
                                         onChange={handlePassportChange}
@@ -528,7 +818,7 @@ function ClassStudents() {
                                     />
                                 </div>
                                 <div style={uploadInfo}>
-                                    Images will be automatically compressed. Max size: 5MB
+                                    Images will be automatically resized to uploadable size
                                 </div>
                                 {uploadStatus && (
                                     <div style={statusMessage}>
@@ -662,7 +952,8 @@ const buttonContainer = {
     display: 'flex',
     gap: '10px',
     justifyContent: 'center',
-    marginBottom: '10px'
+    marginBottom: '10px',
+    flexWrap: 'wrap'
 };
 
 const uploadButton = {
@@ -672,7 +963,9 @@ const uploadButton = {
     borderRadius: '4px',
     cursor: 'pointer',
     textAlign: 'center',
-    fontSize: '14px'
+    fontSize: '14px',
+    flex: '1',
+    minWidth: '120px'
 };
 
 const uploadInfo = {
@@ -719,6 +1012,30 @@ const retryMessage = {
     fontSize: '12px',
     color: '#ff9800',
     marginTop: '5px'
+};
+
+// New styles for image info
+const imageInfoContainer = {
+    backgroundColor: '#f0f0f0',
+    padding: '8px',
+    borderRadius: '4px',
+    margin: '10px 0',
+    fontSize: '12px'
+};
+
+const imageInfoItem = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    margin: '2px 0'
+};
+
+const imageInfoLabel = {
+    fontWeight: 'bold',
+    color: '#555'
+};
+
+const imageInfoValue = {
+    color: '#333'
 };
 
 export default ClassStudents;
