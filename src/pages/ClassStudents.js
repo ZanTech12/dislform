@@ -30,9 +30,18 @@ function ClassStudents() {
     const [passport, setPassport] = useState(null);
     const [passportPreview, setPassportPreview] = useState(null);
     const [error, setError] = useState(null);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
         fetchStudents();
+        // Check if device is mobile
+        const checkMobile = () => {
+            setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
     }, [classLevel]);
 
     const fetchStudents = async () => {
@@ -94,6 +103,19 @@ function ClassStudents() {
     const handlePassportChange = (e) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
+
+            // Validate file type
+            if (!file.type.match('image.*')) {
+                setError("Please select an image file (JPEG, PNG, etc.)");
+                return;
+            }
+
+            // Validate file size (limit to 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                setError("Image size should be less than 5MB");
+                return;
+            }
+
             setPassport(file);
 
             // Create a preview for the newly selected image
@@ -109,6 +131,7 @@ function ClassStudents() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
+        setUploadProgress(0);
 
         try {
             // Create FormData object
@@ -127,10 +150,18 @@ function ClassStudents() {
                 fd.append("passport", passport);
             }
 
-            // Make the API request without manually setting Content-Type
+            // Make the API request with progress tracking
             const response = await axios.put(
                 `https://zannu.duckdns.org/api/students/${editingStudent._id}`,
-                fd
+                fd,
+                {
+                    onUploadProgress: (progressEvent) => {
+                        const percentCompleted = Math.round(
+                            (progressEvent.loaded * 100) / progressEvent.total
+                        );
+                        setUploadProgress(percentCompleted);
+                    },
+                }
             );
 
             alert("✅ Student updated successfully!");
@@ -318,23 +349,63 @@ function ClassStudents() {
                             <input type="date" name="dateOfAdmission" value={form.dateOfAdmission} onChange={handleChange} style={input} />
 
                             {/* Passport Upload */}
-                            <div>
+                            <div style={uploadContainer}>
                                 <label style={label}>Passport Photo:</label>
                                 {passportPreview && (
-                                    <div style={{ marginBottom: "10px" }}>
+                                    <div style={previewContainer}>
                                         <img
                                             src={passportPreview}
                                             alt="Passport Preview"
-                                            style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "4px" }}
+                                            style={previewImage}
                                         />
+                                        <button
+                                            type="button"
+                                            style={removeImageButton}
+                                            onClick={() => {
+                                                setPassport(null);
+                                                setPassportPreview(null);
+                                            }}
+                                        >
+                                            ✕
+                                        </button>
                                     </div>
                                 )}
-                                <input
-                                    type="file"
-                                    onChange={handlePassportChange}
-                                    style={input}
-                                    accept="image/*"
-                                />
+                                <div style={buttonContainer}>
+                                    <label htmlFor="passport-upload" style={uploadButton}>
+                                        {isMobile ? "📷 Take Photo" : "📁 Choose File"}
+                                    </label>
+                                    <input
+                                        id="passport-upload"
+                                        type="file"
+                                        onChange={handlePassportChange}
+                                        style={{ display: 'none' }}
+                                        accept="image/*"
+                                        capture={isMobile ? "environment" : undefined}
+                                    />
+                                    {isMobile && (
+                                        <label htmlFor="passport-upload-file" style={uploadButton}>
+                                            📁 Choose from Gallery
+                                        </label>
+                                    )}
+                                    <input
+                                        id="passport-upload-file"
+                                        type="file"
+                                        onChange={handlePassportChange}
+                                        style={{ display: 'none' }}
+                                        accept="image/*"
+                                    />
+                                </div>
+                                <div style={uploadInfo}>
+                                    Accepted formats: JPEG, PNG, GIF. Max size: 5MB
+                                </div>
+                                {uploadProgress > 0 && uploadProgress < 100 && (
+                                    <div style={progressContainer}>
+                                        <div style={progressBar}>
+                                            <div style={{ ...progressFill, width: `${uploadProgress}%` }}></div>
+                                        </div>
+                                        <div style={progressText}>{uploadProgress}%</div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Buttons */}
@@ -397,6 +468,94 @@ const classInfo = {
     fontSize: '12px',
     color: '#666',
     fontStyle: 'italic'
+};
+
+// New styles for upload functionality
+const uploadContainer = {
+    margin: '15px 0',
+    padding: '10px',
+    border: '1px dashed #ccc',
+    borderRadius: '5px',
+    backgroundColor: '#f9f9f9'
+};
+
+const previewContainer = {
+    position: 'relative',
+    width: '120px',
+    height: '120px',
+    margin: '0 auto 10px'
+};
+
+const previewImage = {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    borderRadius: '5px',
+    border: '1px solid #ddd'
+};
+
+const removeImageButton = {
+    position: 'absolute',
+    top: '-5px',
+    right: '-5px',
+    width: '20px',
+    height: '20px',
+    borderRadius: '50%',
+    backgroundColor: '#f44336',
+    color: 'white',
+    border: 'none',
+    cursor: 'pointer',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center'
+};
+
+const buttonContainer = {
+    display: 'flex',
+    gap: '10px',
+    justifyContent: 'center',
+    marginBottom: '10px'
+};
+
+const uploadButton = {
+    padding: '10px 15px',
+    backgroundColor: '#2196F3',
+    color: 'white',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    textAlign: 'center',
+    fontSize: '14px'
+};
+
+const uploadInfo = {
+    fontSize: '12px',
+    color: '#666',
+    textAlign: 'center',
+    marginTop: '5px'
+};
+
+const progressContainer = {
+    marginTop: '10px'
+};
+
+const progressBar = {
+    width: '100%',
+    height: '10px',
+    backgroundColor: '#e0e0e0',
+    borderRadius: '5px',
+    overflow: 'hidden'
+};
+
+const progressFill = {
+    height: '100%',
+    backgroundColor: '#4CAF50',
+    transition: 'width 0.3s ease'
+};
+
+const progressText = {
+    textAlign: 'center',
+    fontSize: '12px',
+    marginTop: '5px'
 };
 
 export default ClassStudents;
