@@ -28,6 +28,8 @@ function ClassStudents() {
         admissionNumber: "",
     });
     const [passport, setPassport] = useState(null);
+    const [passportPreview, setPassportPreview] = useState(null);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         fetchStudents();
@@ -41,9 +43,10 @@ function ClassStudents() {
                 (student) => student.classLevel === classLevel
             );
             setStudents(classStudents);
+            setError(null);
         } catch (err) {
             console.error("❌ Error fetching students:", err);
-            alert("Failed to load students for this class.");
+            setError("Failed to load students for this class.");
         } finally {
             setLoading(false);
         }
@@ -71,39 +74,100 @@ function ClassStudents() {
             admissionNumber: student.admissionNumber || "",
         });
         setPassport(null);
+        // Set passport preview if student has a passport
+        if (student.passport) {
+            setPassportPreview(`https://zannu.duckdns.org/uploads/${student.passport}`);
+        } else {
+            setPassportPreview(null);
+        }
+        setError(null);
     };
 
-    const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        // Trim the value to remove any extra spaces
+        const trimmedValue = typeof value === 'string' ? value.trim() : value;
+        setForm({ ...form, [name]: trimmedValue });
+        setError(null);
+    };
+
+    const handlePassportChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setPassport(file);
+
+            // Create a preview for the newly selected image
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPassportPreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+        setError(null);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        try {
-            const fd = new FormData();
-            Object.keys(form).forEach((key) => fd.append(key, form[key]));
-            if (passport) fd.append("passport", passport);
+        setError(null);
 
-            await axios.put(
+        try {
+            // Create FormData object
+            const fd = new FormData();
+
+            // Append all form fields
+            Object.keys(form).forEach((key) => {
+                // Ensure we don't send empty strings for optional fields
+                if (form[key] !== "") {
+                    fd.append(key, form[key]);
+                }
+            });
+
+            // Append passport if a new one is selected
+            if (passport) {
+                fd.append("passport", passport);
+            }
+
+            // Make the API request without manually setting Content-Type
+            const response = await axios.put(
                 `https://zannu.duckdns.org/api/students/${editingStudent._id}`,
-                fd,
-                { headers: { "Content-Type": "multipart/form-data" } }
+                fd
             );
 
             alert("✅ Student updated successfully!");
             setEditingStudent(null);
             fetchStudents();
         } catch (err) {
-            console.error("❌ Error updating student:", err.response?.data || err.message);
-            alert("Failed to update student");
+            console.error("❌ Error updating student:", err);
+
+            // Extract error message from response if available
+            let errorMessage = "Failed to update student";
+            if (err.response) {
+                // Server responded with error status
+                console.error("Error response data:", err.response.data);
+                console.error("Error status:", err.response.status);
+                errorMessage = err.response.data.message || err.response.data || errorMessage;
+            } else if (err.request) {
+                // Request was made but no response received
+                errorMessage = "No response from server. Please check your connection.";
+            } else {
+                // Error in request setup
+                errorMessage = err.message;
+            }
+
+            setError(errorMessage);
+            alert(errorMessage);
         }
     };
 
-    const handleCancel = () => setEditingStudent(null);
+    const handleCancel = () => {
+        setEditingStudent(null);
+        setError(null);
+    };
 
     // ✅ enums aligned with the backend model
     const classLevels = [
-        "KG 1", "KG 2",
-        "Nursery 1", "Nursery 2",
-        "Basic 1", "Basic 2", "Basic 3", "Basic 4", "Basic 5",
+        "Reception", "KG 1", "KG 2", "Nursery 1", "Nursery 2",
+        "Primary 1", "Primary 2", "Primary 3", "Primary 4", "Primary 5", "Primary 6",
         "JSS 1", "JSS 2", "JSS 3",
         "SSS 1", "SSS 2", "SSS 3"
     ];
@@ -113,6 +177,7 @@ function ClassStudents() {
     return (
         <div style={{ padding: 20 }}>
             <h2>👨‍🎓 Students in {classLevel}</h2>
+            {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
             {loading ? (
                 <p>Loading students...</p>
             ) : students.length === 0 ? (
@@ -157,6 +222,7 @@ function ClassStudents() {
                 <div style={modalOverlay}>
                     <div style={modalContent}>
                         <h3>Edit Student</h3>
+                        {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
                         <form onSubmit={handleSubmit} style={formStyle} className="responsive-form">
                             <div>
                                 <label style={label}>Admission Number:</label>
@@ -234,8 +300,22 @@ function ClassStudents() {
 
                             {/* Passport Upload */}
                             <div>
-                                <label style={label}>Upload Passport:</label>
-                                <input type="file" onChange={(e) => setPassport(e.target.files[0])} style={input} />
+                                <label style={label}>Passport Photo:</label>
+                                {passportPreview && (
+                                    <div style={{ marginBottom: "10px" }}>
+                                        <img
+                                            src={passportPreview}
+                                            alt="Passport Preview"
+                                            style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "4px" }}
+                                        />
+                                    </div>
+                                )}
+                                <input
+                                    type="file"
+                                    onChange={handlePassportChange}
+                                    style={input}
+                                    accept="image/*"
+                                />
                             </div>
 
                             {/* Buttons */}
