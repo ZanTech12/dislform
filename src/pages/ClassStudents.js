@@ -32,6 +32,12 @@ function ClassStudents() {
     const [error, setError] = useState(null);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
+    const [uploadStatus, setUploadStatus] = useState('');
+    const [retryCount, setRetryCount] = useState(0);
+
+    // Configure axios with increased timeout
+    axios.defaults.timeout = 60000; // 60 seconds timeout
 
     useEffect(() => {
         fetchStudents();
@@ -41,13 +47,26 @@ function ClassStudents() {
         };
         checkMobile();
         window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
+
+        // Monitor network status
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('resize', checkMobile);
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
     }, [classLevel]);
 
     const fetchStudents = async () => {
         try {
             setLoading(true);
-            const res = await axios.get("https://zannu.duckdns.org/api/students");
+            const res = await axios.get("https://zannu.duckdns.org/api/students", {
+                timeout: 30000 // 30 seconds for fetching
+            });
             const classStudents = res.data.filter(
                 (student) => student.classLevel === classLevel
             );
@@ -55,7 +74,11 @@ function ClassStudents() {
             setError(null);
         } catch (err) {
             console.error("❌ Error fetching students:", err);
-            setError("Failed to load students for this class.");
+            if (err.code === 'ECONNABORTED') {
+                setError("Request timed out. Please check your connection and try again.");
+            } else {
+                setError("Failed to load students for this class.");
+            }
         } finally {
             setLoading(false);
         }
@@ -83,24 +106,60 @@ function ClassStudents() {
             admissionNumber: student.admissionNumber || "",
         });
         setPassport(null);
-        // Set passport preview if student has a passport
         if (student.passport) {
             setPassportPreview(`https://zannu.duckdns.org/uploads/${student.passport}`);
         } else {
             setPassportPreview(null);
         }
         setError(null);
+        setUploadStatus('');
+        setRetryCount(0);
     };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        // Trim the value to remove any extra spaces
         const trimmedValue = typeof value === 'string' ? value.trim() : value;
         setForm({ ...form, [name]: trimmedValue });
         setError(null);
     };
 
-    const handlePassportChange = (e) => {
+    // Compress image before upload
+    const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.7) => {
+        return new Promise((resolve) => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+
+            img.onload = () => {
+                // Calculate new dimensions
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height *= maxWidth / width;
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width *= maxHeight / height;
+                        height = maxHeight;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                // Draw and compress
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob(resolve, 'image/jpeg', quality);
+            };
+
+            img.src = URL.createObjectURL(file);
+        });
+    };
+
+    const handlePassportChange = async (e) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
 
@@ -110,89 +169,149 @@ function ClassStudents() {
                 return;
             }
 
-            // Validate file size (limit to 5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                setError("Image size should be less than 5MB");
-                return;
+            setUploadStatus('Processing image...');
+
+            try {
+                // Compress the image
+                const compressedFile = await compressImage(file);
+
+                // Check if compression helped
+                if (compressedFile.size > 5 * 1024 * 1024) {
+                    // Try with lower quality
+                    const smallerFile = await compressImage(file, 600, 600, 0.5);
+                    if (smallerFile.size > 5 * 1024 * 1024) {
+                        setError("Image is too large even after compression. Please choose a smaller image.");
+                        setUploadStatus('');
+                        return;
+                    }
+                    setPassport(smallerFile);
+                } else {
+                    setPassport(compressedFile);
+                }
+
+                // Create preview
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setPassportPreview(reader.result);
+                    setUploadStatus('');
+                };
+                reader.readAsDataURL(compressedFile);
+
+            } catch (err) {
+                console.error("Error compressing image:", err);
+                setError("Failed to process image. Please try another one.");
+                setUploadStatus('');
             }
-
-            setPassport(file);
-
-            // Create a preview for the newly selected image
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPassportPreview(reader.result);
-            };
-            reader.readAsDataURL(file);
         }
         setError(null);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (!isOnline) {
+            setError("You appear to be offline. Please check your internet connection.");
+            return;
+        }
+
         setError(null);
         setUploadProgress(0);
+        setUploadStatus('Preparing upload...');
+        setRetryCount(0);
 
-        try {
-            // Create FormData object
-            const fd = new FormData();
+        const uploadWithRetry = async (attempt = 1) => {
+            try {
+                setUploadStatus(`Uploading... (Attempt ${attempt})`);
 
-            // Append all form fields
-            Object.keys(form).forEach((key) => {
-                // Ensure we don't send empty strings for optional fields
-                if (form[key] !== "") {
-                    fd.append(key, form[key]);
+                // Create FormData object
+                const fd = new FormData();
+
+                // Append all form fields
+                Object.keys(form).forEach((key) => {
+                    if (form[key] !== "") {
+                        fd.append(key, form[key]);
+                    }
+                });
+
+                // Append passport if a new one is selected
+                if (passport) {
+                    fd.append("passport", passport);
                 }
-            });
 
-            // Append passport if a new one is selected
-            if (passport) {
-                fd.append("passport", passport);
-            }
+                // Make the API request with extended timeout and progress tracking
+                const response = await axios.put(
+                    `https://zannu.duckdns.org/api/students/${editingStudent._id}`,
+                    fd,
+                    {
+                        timeout: 120000, // 2 minutes timeout
+                        onUploadProgress: (progressEvent) => {
+                            const percentCompleted = Math.round(
+                                (progressEvent.loaded * 100) / progressEvent.total
+                            );
+                            setUploadProgress(percentCompleted);
+                        },
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }
+                );
 
-            // Make the API request with progress tracking
-            const response = await axios.put(
-                `https://zannu.duckdns.org/api/students/${editingStudent._id}`,
-                fd,
-                {
-                    onUploadProgress: (progressEvent) => {
-                        const percentCompleted = Math.round(
-                            (progressEvent.loaded * 100) / progressEvent.total
-                        );
-                        setUploadProgress(percentCompleted);
-                    },
+                setUploadStatus('Upload complete!');
+                setTimeout(() => {
+                    alert("✅ Student updated successfully!");
+                    setEditingStudent(null);
+                    fetchStudents();
+                    setUploadStatus('');
+                }, 500);
+
+            } catch (err) {
+                console.error("❌ Error updating student:", err);
+
+                let errorMessage = "Failed to update student";
+                let shouldRetry = false;
+
+                if (err.code === 'ECONNABORTED') {
+                    errorMessage = "Upload timed out. This might be due to a slow connection.";
+                    shouldRetry = attempt < 3;
+                } else if (err.response) {
+                    console.error("Error response data:", err.response.data);
+                    console.error("Error status:", err.response.status);
+
+                    if (err.response.status === 413) {
+                        errorMessage = "File too large. Please choose a smaller image.";
+                    } else if (err.response.status >= 500) {
+                        errorMessage = "Server error. Please try again.";
+                        shouldRetry = attempt < 3;
+                    } else {
+                        errorMessage = err.response.data.message || err.response.data || errorMessage;
+                    }
+                } else if (err.request) {
+                    errorMessage = "No response from server. Please check your connection.";
+                    shouldRetry = attempt < 3;
+                } else {
+                    errorMessage = err.message;
                 }
-            );
 
-            alert("✅ Student updated successfully!");
-            setEditingStudent(null);
-            fetchStudents();
-        } catch (err) {
-            console.error("❌ Error updating student:", err);
-
-            // Extract error message from response if available
-            let errorMessage = "Failed to update student";
-            if (err.response) {
-                // Server responded with error status
-                console.error("Error response data:", err.response.data);
-                console.error("Error status:", err.response.status);
-                errorMessage = err.response.data.message || err.response.data || errorMessage;
-            } else if (err.request) {
-                // Request was made but no response received
-                errorMessage = "No response from server. Please check your connection.";
-            } else {
-                // Error in request setup
-                errorMessage = err.message;
+                if (shouldRetry) {
+                    setRetryCount(attempt);
+                    setUploadStatus(`Retrying... (${attempt}/3)`);
+                    setTimeout(() => uploadWithRetry(attempt + 1), 2000 * attempt); // Exponential backoff
+                } else {
+                    setError(errorMessage);
+                    setUploadStatus('');
+                    alert(errorMessage);
+                }
             }
+        };
 
-            setError(errorMessage);
-            alert(errorMessage);
-        }
+        uploadWithRetry();
     };
 
     const handleCancel = () => {
         setEditingStudent(null);
         setError(null);
+        setUploadStatus('');
+        setRetryCount(0);
     };
 
     // ✅ enums aligned with the backend model
@@ -207,6 +326,19 @@ function ClassStudents() {
 
     return (
         <div style={{ padding: 20 }}>
+            {!isOnline && (
+                <div style={{
+                    backgroundColor: '#ffeb3b',
+                    color: '#000',
+                    padding: '10px',
+                    borderRadius: '4px',
+                    marginBottom: '10px',
+                    textAlign: 'center'
+                }}>
+                    ⚠️ You appear to be offline. Some features may not work properly.
+                </div>
+            )}
+
             <h2>👨‍🎓 Students in {classLevel}</h2>
             {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
             {loading ? (
@@ -396,8 +528,13 @@ function ClassStudents() {
                                     />
                                 </div>
                                 <div style={uploadInfo}>
-                                    Accepted formats: JPEG, PNG, GIF. Max size: 5MB
+                                    Images will be automatically compressed. Max size: 5MB
                                 </div>
+                                {uploadStatus && (
+                                    <div style={statusMessage}>
+                                        {uploadStatus}
+                                    </div>
+                                )}
                                 {uploadProgress > 0 && uploadProgress < 100 && (
                                     <div style={progressContainer}>
                                         <div style={progressBar}>
@@ -406,11 +543,22 @@ function ClassStudents() {
                                         <div style={progressText}>{uploadProgress}%</div>
                                     </div>
                                 )}
+                                {retryCount > 0 && (
+                                    <div style={retryMessage}>
+                                        Retry attempt {retryCount}/3
+                                    </div>
+                                )}
                             </div>
 
                             {/* Buttons */}
                             <div style={{ display: "flex", gap: "10px", flexDirection: "column", marginTop: "10px" }}>
-                                <button type="submit" style={editButton}>Save</button>
+                                <button
+                                    type="submit"
+                                    style={editButton}
+                                    disabled={uploadStatus && uploadStatus.includes('Uploading')}
+                                >
+                                    {uploadStatus && uploadStatus.includes('Uploading') ? 'Uploading...' : 'Save'}
+                                </button>
                                 <button type="button" style={cancelButton} onClick={handleCancel}>Cancel</button>
                             </div>
                         </form>
@@ -555,6 +703,21 @@ const progressFill = {
 const progressText = {
     textAlign: 'center',
     fontSize: '12px',
+    marginTop: '5px'
+};
+
+const statusMessage = {
+    textAlign: 'center',
+    fontSize: '14px',
+    color: '#2196F3',
+    marginTop: '10px',
+    fontStyle: 'italic'
+};
+
+const retryMessage = {
+    textAlign: 'center',
+    fontSize: '12px',
+    color: '#ff9800',
     marginTop: '5px'
 };
 
