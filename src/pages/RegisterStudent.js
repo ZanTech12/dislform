@@ -6,8 +6,9 @@ import bgImage from "../background.jpg";
 import studentImg from "../student.jpg";
 import AdminFooter from "../components/AdminFooter";
 import { FaUser, FaCalendarAlt, FaFlag, FaSchool, FaEnvelope, FaPhone } from "react-icons/fa";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+// Remove DatePicker import as we're using native HTML date inputs
+// import DatePicker from "react-datepicker";
+// import "react-datepicker/dist/react-datepicker.css";
 
 function RegisterStudent() {
     const initialForm = {
@@ -280,18 +281,18 @@ function RegisterStudent() {
                                 )}
                             </div>
 
-                            {/* Date of Birth */}
+                            {/* Date of Birth - Simplified with native HTML date input */}
                             <div style={{ marginBottom: "15px" }}>
                                 <label htmlFor="dateOfBirth" style={{ display: "block", marginBottom: "5px" }}>
                                     Date of Birth:
                                 </label>
-                                <DatePicker
+                                <input
+                                    type="date"
                                     id="dateOfBirth"
-                                    selected={form.dateOfBirth ? new Date(form.dateOfBirth) : null}
-                                    onChange={(date) => setForm({ ...form, dateOfBirth: date.toISOString().split('T')[0] })}
-                                    dateFormat="yyyy-MM-dd"
-                                    placeholderText="Select date of birth"
-                                    style={input}
+                                    name="dateOfBirth"
+                                    value={form.dateOfBirth}
+                                    onChange={handleChange}
+                                    style={{ ...input, paddingLeft: "10px" }}
                                     required
                                 />
                             </div>
@@ -504,18 +505,18 @@ function RegisterStudent() {
                                 </select>
                             </div>
 
-                            {/* Date of Admission */}
+                            {/* Date of Admission - Simplified with native HTML date input */}
                             <div style={{ marginBottom: "15px" }}>
                                 <label htmlFor="dateOfAdmission" style={{ display: "block", marginBottom: "5px" }}>
                                     Date of Admission:
                                 </label>
-                                <DatePicker
+                                <input
+                                    type="date"
                                     id="dateOfAdmission"
-                                    selected={form.dateOfAdmission ? new Date(form.dateOfAdmission) : null}
-                                    onChange={(date) => setForm({ ...form, dateOfAdmission: date.toISOString().split('T')[0] })}
-                                    dateFormat="yyyy-MM-dd"
-                                    placeholderText="Select date of admission"
-                                    style={input}
+                                    name="dateOfAdmission"
+                                    value={form.dateOfAdmission}
+                                    onChange={handleChange}
+                                    style={{ ...input, paddingLeft: "10px" }}
                                     required
                                 />
                             </div>
