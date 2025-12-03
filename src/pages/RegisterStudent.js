@@ -129,7 +129,7 @@ function RegisterStudent() {
             }
 
             const response = await axios.post(
-                "https://zannu.duckdns.org/api/students/register",
+                "http://localhost:5000/api/students/register",
                 fd,
                 {
                     headers: { "Content-Type": "multipart/form-data" },

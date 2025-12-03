@@ -87,7 +87,7 @@ function ClassStudents() {
     const fetchStudents = async () => {
         try {
             setLoading(true);
-            const res = await axiosInstance.get("https://zannu.duckdns.org/api/students");
+            const res = await axiosInstance.get("http://localhost:5000/api/students");
             const classStudents = res.data.filter(
                 (student) => student.classLevel === classLevel
             );
@@ -128,7 +128,7 @@ function ClassStudents() {
         });
         setPassport(null);
         if (student.passport) {
-            setPassportPreview(`https://zannu.duckdns.org/uploads/${student.passport}`);
+            setPassportPreview(`http://localhost:5000/uploads/${student.passport}`);
         } else {
             setPassportPreview(null);
         }
@@ -414,7 +414,7 @@ function ClassStudents() {
         }
 
         return await axiosInstance.put(
-            `https://zannu.duckdns.org/api/students/${editingStudent._id}`,
+            `http://localhost:5000/api/students/${editingStudent._id}`,
             fd,
             {
                 onUploadProgress: (progressEvent) => {
@@ -450,7 +450,7 @@ function ClassStudents() {
         }, 200);
 
         const response = await axiosInstance.put(
-            `https://zannu.duckdns.org/api/students/${editingStudent._id}`,
+            `http://localhost:5000/api/students/${editingStudent._id}`,
             payload
         );
 
@@ -626,7 +626,7 @@ function ClassStudents() {
                                     <td>
                                         {st.passport ? (
                                             <img
-                                                src={`https://zannu.duckdns.org/uploads/${st.passport}`}
+                                                src={`https://localhost:5000/uploads/${st.passport}`}
                                                 alt="Passport"
                                                 style={passportImageStyle}
                                             />

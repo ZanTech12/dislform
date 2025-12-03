@@ -16,7 +16,7 @@ function AdminClasses() {
     // Fetch all non-deleted students
     const fetchStudents = async () => {
         try {
-            const res = await axios.get("https://zannu.duckdns.org/api/students");
+            const res = await axios.get("http://localhost:5000/api/students");
             setStudents(res.data);
             setFilteredStudents(res.data);
         } catch (err) {
@@ -52,7 +52,7 @@ function AdminClasses() {
         e.stopPropagation(); // prevent row click from triggering navigation
         if (!window.confirm("Are you sure you want to move this student to the bin?")) return;
         try {
-            await axios.put(`https://zannu.duckdns.org/api/students/recycle/${id}`);
+            await axios.put(`http://localhost:5000/api/students/recycle/${id}`);
             alert("🗑 Student moved to recycle bin successfully!");
             fetchStudents();
             setSearchTerm("");
@@ -151,7 +151,7 @@ function AdminClasses() {
                                     <td>
                                         {st.passport ? (
                                             <img
-                                                src={`https://zannu.duckdns.org/uploads/${st.passport}`}
+                                                src={`https://localhost:5000/uploads/${st.passport}`}
                                                 alt="Passport"
                                                 width="50"
                                                 height="50"
